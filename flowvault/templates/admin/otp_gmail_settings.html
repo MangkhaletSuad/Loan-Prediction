@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}OTP Gmail Settings | Landyhomehub{% endblock %}
+{% block content %}
+<main class="mx-auto max-w-xl p-8">
+  <h1 class="text-2xl font-bold">OTP Gmail Settings</h1>
+  <p class="mt-2 text-slate-500">ใช้ Gmail App Password สำหรับส่งรหัส OTP</p>
+  {% with messages = get_flashed_messages() %}{% if messages %}<div class="alert alert-success mt-4">{{ messages[0] }}</div>{% endif %}{% endwith %}
+  <form method="post" class="mt-6 space-y-4">
+    <label class="label cursor-pointer justify-start gap-2 rounded-lg border p-4"><input class="toggle toggle-primary" name="enabled" type="checkbox" {% if not settings or settings.enabled %}checked{% endif %}><span class="font-semibold">Enable Gmail OTP</span></label>
+    <label class="fieldset"><span class="fieldset-legend">Gmail sender</span><input class="input input-bordered w-full" name="sender_email" type="email" value="{{ settings.sender_email if settings else '' }}" required></label>
+    <label class="fieldset"><span class="fieldset-legend">Gmail App Password</span><input class="input input-bordered w-full" name="app_password" type="password" required></label>
+    <div class="grid grid-cols-2 gap-4"><label class="fieldset"><span class="fieldset-legend">SMTP host</span><input class="input input-bordered w-full" name="smtp_host" value="{{ settings.smtp_host if settings else 'smtp.gmail.com' }}" required></label><label class="fieldset"><span class="fieldset-legend">Port</span><input class="input input-bordered w-full" name="smtp_port" type="number" value="{{ settings.smtp_port if settings else 587 }}" required></label></div>
+    <label class="label cursor-pointer justify-start gap-2"><input class="checkbox" name="use_tls" type="checkbox" {% if not settings or settings.use_tls %}checked{% endif %}>Use STARTTLS</label>
+    <button class="btn btn-primary">บันทึกการตั้งค่า</button>
+  </form>
+</main>
+{% endblock %}

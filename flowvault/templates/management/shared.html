@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<main class="mx-auto max-w-5xl p-8">
+  <h1 class="text-2xl font-bold">Shared with me</h1>
+  <form class="mt-5 flex max-w-xl gap-2" method="get">
+    <input class="input input-bordered flex-1" type="email" name="email" value="{{ selected_email }}" placeholder="ค้นหาจากอีเมลผู้แชร์">
+    <button class="btn btn-primary">ค้นหา</button>
+    {% if selected_email %}<a class="btn btn-ghost" href="{{ url_for('management.shared_with_me') }}">ล้าง</a>{% endif %}
+  </form>
+  <div class="mt-5 overflow-x-auto rounded-lg border bg-white">
+    <table class="table">
+      <thead><tr><th>ไฟล์</th><th>สิทธิ์</th><th>แชร์โดย</th><th>ผู้รับ</th><th>หมดอายุ</th><th>สถานะ</th><th></th></tr></thead>
+      <tbody>
+        {% for item in shares %}
+        <tr>
+          <td>{{ item.item_name }}</td><td>{{ item.permission }}</td><td>{{ item.shared_by }}</td><td>{{ item.recipient_email }}</td>
+          <td>{{ item.expires_at.strftime('%d %b %Y, %H:%M') if item.expires_at else 'หมดอายุแล้ว' }}</td>
+          <td>{% if item.is_active %}<span class="badge badge-success badge-outline">ใช้งานได้</span>{% else %}<span class="badge badge-error badge-outline">หมดอายุ</span>{% endif %}</td>
+          <td>{% if item.is_active %}{% if item.can_preview %}<a class="btn btn-outline btn-xs" href="{{ url_for('files.shared_preview', owner=item.shared_by, file=item.item_name) }}" target="_blank" rel="noopener">ดู</a>{% endif %}{% if item.permission == 'download' %}<a class="btn btn-primary btn-xs" href="{{ url_for('files.shared_download', owner=item.shared_by, file=item.item_name) }}">ดาวน์โหลด</a>{% endif %}{% else %}<button class="btn btn-disabled btn-xs" disabled>หมดอายุ</button>{% endif %}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="py-10 text-center text-slate-500">ยังไม่มีรายการที่แชร์ให้คุณ</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</main>
+{% endblock %}

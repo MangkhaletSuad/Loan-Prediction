@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% block title %}My files | Landyhomehub{% endblock %}
+{% block styles %}
+<style>
+  .folder-panel { width: 256px; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; box-shadow: 0 8px 24px rgb(15 23 42 / 6%); }
+  .folder-panel-head { display: flex; align-items: center; justify-content: space-between; padding: 0 0 10px; border-bottom: 1px solid #e2e8f0; }
+  .folder-panel-head button { width: 27px; height: 27px; border: 1px solid #dbe4f0; border-radius: 8px; color: #2563eb; background: #fff; font-size: 18px; line-height: 1; }
+  .folder-tree { margin-top: 15px; color: #64748b; font-size: 13px; }
+  .folder-tree-title { margin: 0 0 7px 8px; color: #94a3b8; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .directory-node { margin: 0; } .directory-node summary { list-style: none; } .directory-node summary::-webkit-details-marker { display: none; }
+  .directory-summary { position: relative; display: flex; align-items: center; min-height: 29px; cursor: pointer; } .tree-branch { width: 17px; text-align: center; } details.directory-node > .directory-summary > .tree-branch::after { content: '›'; display: inline-block; transition: transform .15s; } details.directory-node[open] > .directory-summary > .tree-branch::after { transform: rotate(90deg); }
+  .folder-tree-link { display: flex; min-width: 0; align-items: center; gap: 7px; color: inherit; text-decoration: none; } .folder-tree-link:hover { color: #2563eb; } .tree-icon { display: flex; color: #1677ff; } .tree-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .directory-children { margin-left: 8px; padding-left: 7px; border-left: 1px solid #bfdbfe; } .directory-children > .directory-node > .directory-summary::before { position: absolute; top: 50%; left: -15px; width: 15px; border-top: 1px solid #bfdbfe; content: ''; }
+  .top-actions { display: inline-flex; align-items: center; overflow: hidden; border: 1px solid #dbe4f0; border-radius: 8px; background: #fff; }
+  .top-actions button { display: grid; width: 37px; height: 34px; place-items: center; color: #52657a; background: transparent; border: 0; cursor: pointer; }
+  .top-actions button:hover { background: #f1f5f9; color: #2563eb; } .top-actions button:focus-visible { outline: 2px solid #3b82f6; outline-offset: -2px; }
+  .top-actions svg { width: 18px; height: 18px; fill: currentColor; } .top-actions .danger:hover { color: #dc2626; background: #fef2f2; }
+  .sort-controls { position: relative; display: flex; width: 296px; gap: 8px; } .duration-filter { position: absolute; top: calc(100% + 8px); left: 0; display: flex; width: max-content; align-items: center; gap: 6px; color: #64748b; font-size: 12px; } .duration-filter input { height: 32px; border: 1px solid #dbe4f0; border-radius: 6px; padding: 0 7px; background: #fff; color: #475569; font: inherit; }
+</style>
+{% endblock %}
+{% block app_header %}{% endblock %}
+{% block content %}
+<div id="app-shell" class="min-h-screen bg-[#f6f8fc] text-slate-800">
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 flex w-[230px] -translate-x-full flex-col overflow-y-auto bg-[#111c27] px-2 py-6 text-slate-300 shadow-2xl transition-transform duration-200 ease-out">
+    <div class="flex items-center justify-between px-2">
+      <a href="{{ url_for('files.my_files') }}" class="flex items-center gap-3 text-xl font-bold text-white"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500">L</span><span>Landyhomehub</span></a>
+      <button id="sidebar-toggle" class="btn btn-ghost btn-square btn-sm shrink-0 text-slate-400" aria-label="ปิดเมนู" aria-expanded="true">×</button>
+    </div>
+    <nav class="mt-12 text-sm font-semibold">
+      <p class="sidebar-label px-2 text-[10px] font-bold tracking-wider text-slate-500">WORKSPACE</p>
+      <a title="My files" class="mt-3 flex items-center gap-3 rounded-lg px-3 py-3 bg-[#2a4054] text-white" href="{{ url_for('files.my_files') }}"><span class="sidebar-icon">▣</span><span class="sidebar-label">My files</span></a>
+      <a title="Shared with me" class="mt-1 flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-slate-800" href="{{ url_for('management.shared_with_me') }}"><span class="sidebar-icon">♧</span><span class="sidebar-label">Shared with me</span></a>
+      <p class="sidebar-label mt-6 px-2 text-[10px] font-bold tracking-wider text-slate-500">ADMINISTRATION</p>
+      {% if is_department_admin or is_super_admin %}<a title="Users & permissions" class="mt-3 flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-slate-800" href="{{ url_for('management.users_permissions') }}"><span class="sidebar-icon">♟</span><span class="sidebar-label">Users &amp; permissions</span></a>{% endif %}
+      {% if is_department_admin or is_super_admin %}<a title="Download usage" class="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-slate-800" href="{{ url_for('management.usage', kind='download') }}"><span class="sidebar-icon">▥</span><span class="sidebar-label">Download usage</span></a><a title="Upload usage" class="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-slate-800" href="{{ url_for('management.usage', kind='upload') }}"><span class="sidebar-icon">⇧</span><span class="sidebar-label">Upload usage</span></a><a title="Upload file types" class="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-slate-800" href="{{ url_for('management.file_types') }}"><span class="sidebar-icon">⇧</span><span class="sidebar-label">Upload file types</span></a>{% endif %}
+      {% if is_super_admin %}<a title="Departments" class="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-slate-800" href="{{ url_for('management.departments') }}"><span class="sidebar-icon">⌘</span><span class="sidebar-label">Departments</span></a><a title="Permission Tiers" class="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-slate-800" href="{{ url_for('management.permission_tiers') }}"><span class="sidebar-icon">▦</span><span class="sidebar-label">Permission Tiers</span></a><a title="Logs" class="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-slate-800" href="{{ url_for('auth.admin_logs') }}"><span>▤</span><span>Logs</span></a><a title="OTP Gmail Settings" class="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-slate-800" href="{{ url_for('auth.otp_gmail_settings') }}"><span>✉</span><span>OTP Gmail Settings</span></a>{% endif %}
+    </nav>
+    <section class="mt-auto border-t border-slate-700 px-2 pt-4 text-xs">
+      <div class="flex items-center justify-between"><strong class="text-slate-200">Server storage</strong><span class="text-slate-400">{{ storage.percent_used }}%</span></div>
+      <p class="mt-1 text-slate-400">{{ storage.used }} GB / {{ storage.total }} GB</p>
+      <progress class="progress progress-primary mt-2 h-1.5 w-full" value="{{ storage.percent_used }}" max="100" aria-label="ใช้พื้นที่ {{ storage.percent_used }}%"></progress>
+    </section>
+  </aside>
+  <div id="sidebar-backdrop" class="fixed inset-0 z-40 hidden bg-slate-950/40 backdrop-blur-[1px]"></div>
+  <div class="min-w-0">
+    <header class="border-b border-slate-200 bg-white/70 px-4 py-3 backdrop-blur md:px-7"><div class="flex items-center gap-4"><button id="header-sidebar-toggle" class="btn btn-square btn-ghost btn-sm hidden lg:inline-flex" aria-label="เปิดเมนู" aria-expanded="false">☰</button><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-xl font-bold lg:hidden">F</div><div class="hidden min-w-48 sm:block"><p class="text-xs text-slate-400">{{ today }}</p><h1 class="text-2xl font-bold leading-tight">My files</h1></div><input class="input input-bordered h-10 min-w-0 flex-1 bg-white" placeholder="My files" aria-label="Current folder"><span class="badge badge-primary badge-outline hidden sm:inline-flex">{{ user_email }}</span><form action="{{ url_for('auth.logout') }}" method="post"><button class="btn btn-error btn-sm text-white">ออกจากระบบ</button></form></div></header>
+    <main class="flex gap-6 p-4 md:p-7">
+      <nav class="folder-panel hidden h-fit shrink-0 lg:block" aria-label="Folders">
+        {% macro disk_folder(node) -%}{% if node.children %}<details class="directory-node" open><summary class="directory-summary"><span class="tree-branch" aria-hidden="true"></span><a class="folder-tree-link" href="{{ url_for('files.my_files', folder=node.relative_path) }}" title="{{ node.name }}"><span class="tree-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M3 5.5A2.5 2.5 0 0 1 5.5 3H10l2 2h6.5A2.5 2.5 0 0 1 21 7.5v9A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-11Z"/></svg></span><span class="tree-name">{{ node.name }}</span></a></summary><div class="directory-children">{% for child in node.children %}{{ disk_folder(child) }}{% endfor %}</div></details>{% else %}<div class="directory-node"><div class="directory-summary"><span class="tree-branch" aria-hidden="true"></span><a class="folder-tree-link" href="{{ url_for('files.my_files', folder=node.relative_path) }}" title="{{ node.name }}"><span class="tree-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M3 5.5A2.5 2.5 0 0 1 5.5 3H10l2 2h6.5A2.5 2.5 0 0 1 21 7.5v9A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-11Z"/></svg></span><span class="tree-name">{{ node.name }}</span></a></div></div>{% endif %}{%- endmacro %}
+        {% macro folder_link(id, name) -%}<a class="folder-tree-link" href="{{ url_for('files.my_files', folder=id) }}" title="{{ name }}"><span class="tree-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M3 5.5A2.5 2.5 0 0 1 5.5 3H10l2 2h6.5A2.5 2.5 0 0 1 21 7.5v9A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-11Z"/></svg></span><span class="tree-name">{{ name }}</span></a>{%- endmacro %}
+        <div class="folder-panel-head"><strong>Folders</strong><button type="button" title="New folder" onclick="document.getElementById('folder-modal').showModal()">+</button></div>
+        <div class="folder-tree"><div class="folder-tree-title">My folders</div>{% for folder in folder_tree %}{{ disk_folder(folder) }}{% else %}<p class="px-2 py-4 text-sm text-slate-400">ยังไม่มีโฟลเดอร์ใน storage</p>{% endfor %}</div>
+        {% if false %}<div class="folder-tree"><div class="folder-tree-title">My folders</div>
+          <details class="directory-node" open><summary class="directory-summary"><span class="tree-branch" aria-hidden="true"></span>{{ folder_link(1, '(1) มาตรฐาน') }}</summary><div class="directory-children">
+            <details class="directory-node" open><summary class="directory-summary"><span class="tree-branch" aria-hidden="true"></span>{{ folder_link(3, '(1.1) หนังสือเวียน') }}</summary><div class="directory-children">
+              <details class="directory-node"><summary class="directory-summary"><span class="tree-branch" aria-hidden="true"></span>{{ folder_link(4, '(1.1.1) TRENDY') }}</summary><div class="directory-children"></div></details>
+              <details class="directory-node"><summary class="directory-summary"><span class="tree-branch" aria-hidden="true"></span>{{ folder_link(5, '(1.1.2) LANDY') }}</summary><div class="directory-children"></div></details>
+              <details class="directory-node"><summary class="directory-summary"><span class="tree-branch" aria-hidden="true"></span>{{ folder_link(6, '(1.1.3) LANDY GRAND') }}</summary><div class="directory-children"></div></details>
+            </div></details>
+            <details class="directory-node" open><summary class="directory-summary"><span class="tree-branch" aria-hidden="true"></span>{{ folder_link(7, '(1.2) แบบบ้านมาตรฐาน') }}</summary><div class="directory-children">
+              <details class="directory-node"><summary class="directory-summary"><span class="tree-branch" aria-hidden="true"></span>{{ folder_link(8, '(1.2.1) TRENDY') }}</summary></details><details class="directory-node"><summary class="directory-summary"><span class="tree-branch" aria-hidden="true"></span>{{ folder_link(9, '(1.2.2) LANDY') }}</summary></details><details class="directory-node"><summary class="directory-summary"><span class="tree-branch" aria-hidden="true"></span>{{ folder_link(10, '(1.2.3) LANDY GRAND') }}</summary></details>
+            </div></details>
+            <details class="directory-node" open><summary class="directory-summary"><span class="tree-branch" aria-hidden="true"></span>{{ folder_link(11, '(1.3) Family/อุปกรณ์') }}</summary><div class="directory-children">
+              <details class="directory-node"><summary class="directory-summary"><span class="tree-branch" aria-hidden="true"></span>{{ folder_link(12, '(1.3.1) COMPANY-MASTER-FAMILY') }}</summary></details><details class="directory-node"><summary class="directory-summary"><span class="tree-branch" aria-hidden="true"></span>{{ folder_link(13, '(1.3.2) Model D5') }}</summary></details>
+            </div></details>
+          </div></details>
+          <details class="directory-node"><summary class="directory-summary"><span class="tree-branch" aria-hidden="true"></span>{{ folder_link(2, '(2) Project') }}</summary><div class="directory-children"></div></details>
+        </div>{% endif %}
+      </nav>
+      <section class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-2"><select class="select select-bordered select-sm w-[76px]" aria-label="Sort field"><option value="date">Date</option><option value="name">Name</option><option value="size">Size</option><option value="type">Type</option></select><select class="select select-bordered select-sm w-[112px]"><option>Descending</option></select><select class="select select-bordered select-sm w-[92px]"><option>All files</option></select><div class="join ml-auto"><input class="input input-bordered input-sm join-item w-48" placeholder="Search files or folders"><button class="btn btn-sm join-item bg-slate-700 text-white hover:bg-slate-800">Search</button></div><div class="top-actions" role="toolbar" aria-label="Selected item actions"><button type="button" title="Activity log" onclick="selectedInfo()"><svg viewBox="0 0 24 24"><path d="M11 10h2v7h-2v-7Zm0-3h2v2h-2V7Zm1-5a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"/></svg></button><button type="button" class="layout-toggle" title="List layout" aria-label="List layout"><svg viewBox="0 0 24 24"><path d="M4 5h3v3H4V5Zm5 0h11v3H9V5ZM4 10.5h3v3H4v-3Zm5 0h11v3H9v-3ZM4 16h3v3H4v-3Zm5 0h11v3H9v-3Z"/></svg></button><button type="button" title="Share" onclick="selectedShare()"><svg viewBox="0 0 24 24"><path d="M18 8a3 3 0 1 0-2.8-4A3 3 0 0 0 15 5c0 .3.1.7.2 1L8.9 9.6A3 3 0 0 0 7 9a3 3 0 1 0 1.9 5.3l6.3 3.6a3 3 0 1 0 .8-1.5l-6.3-3.6a3 3 0 0 0 0-1.6L16 7.6c.5.3 1.2.4 2 .4Z"/></svg></button><button type="button" title="Rename" onclick="selectedRename()"><svg viewBox="0 0 24"><path d="m4 16.8 9.8-9.8 3.2 3.2L7.2 20H4v-3.2Zm11.2-11.2 1.4-1.4a1.7 1.7 0 0 1 2.4 0l.8.8a1.7 1.7 0 0 1 0 2.4l-1.4 1.4-3.2-3.2Z"/></svg></button><button type="button" title="Move" onclick="selectedMove()"><svg viewBox="0 0 24 24"><path d="M13 5 9 1v3H4v2h5v3l4-4Zm-2 10-4 4h3v3h2v-3h3l-4-4Zm9-3h-8v2h8v-2Z"/></svg></button><button type="button" title="Download" onclick="selectedDownload()"><svg viewBox="0 0 24 24"><path d="M11 3h2v9l3-3 1.4 1.4-5.4 5.4-5.4-5.4L8 9l3 3V3Zm-7 15h16v3H4v-3Z"/></svg></button><button class="danger" type="button" title="Delete" onclick="selectedDelete()"><svg viewBox="0 0 24 24"><path d="M8 3h8l1 2h4v2H3V5h4l1-2Zm-3 6h14l-1 12H6L5 9Zm4 3v6h2v-6H9Zm4 0v6h2v-6h-2Z"/></svg></button></div><button class="btn btn-outline btn-sm">＋ New folder</button><button class="btn btn-primary btn-sm">Upload file</button></div><div class="mt-8 flex flex-wrap items-center gap-3 text-sm text-slate-500"><span>Click files or folders to select multiple items. Click a selected item again to deselect it.</span><button class="btn btn-outline btn-xs">เลือกไฟล์ทั้งหมด</button></div><section class="mt-6"><h2 class="font-bold">Folders <span class="ml-2 text-xs font-normal text-slate-400">1 items</span></h2><article class="mt-3 flex w-full max-w-69 items-center gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm"><span class="text-3xl">📁</span><div><h3 class="font-semibold">storage</h3><p class="mt-1 text-[11px] text-slate-500">Size: 65.93 KB</p><p class="text-[11px] text-slate-500">Created by: System Admin</p><p class="text-[11px] text-slate-500">Created: 28 Aug 2026, 07:39</p></div></article></section><section class="mt-6"><h2 class="font-bold">Files <span class="ml-2 text-xs font-normal text-slate-400">0 items</span></h2><p class="mt-7 max-w-64 text-sm text-slate-500">No files here yet. Upload your first file to get started.</p></section></section>
+    </main>
+  </div>
+  <script id="folder-browser-data" type="application/json">{{ browser|tojson }}</script>
+  <dialog id="folder-modal" class="modal"><div class="modal-box"><h3 class="text-lg font-bold">New folder</h3><label class="fieldset mt-4"><span class="fieldset-legend">Folder name</span><input class="input input-bordered w-full" placeholder="e.g. Project files" autofocus></label><div class="modal-action"><form method="dialog"><button class="btn">Cancel</button><button class="btn btn-primary ml-2" value="create">Create folder</button></form></div></div><form method="dialog" class="modal-backdrop"><button aria-label="Close">close</button></form></dialog>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  const sidebar = document.querySelector('#sidebar');
+  const closeToggle = document.querySelector('#sidebar-toggle');
+  const headerToggle = document.querySelector('#header-sidebar-toggle');
+  const backdrop = document.querySelector('#sidebar-backdrop');
+  const openSidebar = () => {
+    if (!sidebar || !backdrop || !headerToggle || !closeToggle) return;
+    sidebar.classList.remove('-translate-x-full');
+    backdrop.classList.remove('hidden');
+    headerToggle.setAttribute('aria-expanded', 'true');
+    closeToggle.setAttribute('aria-expanded', 'true');
+  };
+  const closeSidebar = () => {
+    if (!sidebar || !backdrop || !headerToggle || !closeToggle) return;
+    sidebar.classList.add('-translate-x-full');
+    backdrop.classList.add('hidden');
+    headerToggle.setAttribute('aria-expanded', 'false');
+    closeToggle.setAttribute('aria-expanded', 'false');
+  };
+  headerToggle?.addEventListener('click', openSidebar);
+  closeToggle?.addEventListener('click', closeSidebar);
+  backdrop?.addEventListener('click', closeSidebar);
+  document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeSidebar(); });
+  const selectedAction = (action) => console.info(`${action}: select a file or folder first.`);
+  const selectedFiles = new Set();
+  function selectedInfo() { selectedAction('Activity log'); }
+  async function selectedShare() {
+    if (!selectedFiles.size) {
+      await Swal.fire({ icon: 'info', title: 'เลือกไฟล์ก่อนแชร์', text: 'เลือกไฟล์อย่างน้อย 1 รายการ หรือใช้ปุ่มเลือกไฟล์ทั้งหมด' });
+      return;
+    }
+    const { value, isConfirmed } = await Swal.fire({
+      title: 'แชร์ไฟล์',
+      html: `
+        <label for="share-file-path" class="block text-left text-sm font-medium">ชื่อไฟล์</label>
+        <input id="share-file-path" class="swal2-input !mx-0 !w-full" placeholder="relative path ของไฟล์">
+        <label for="share-recipient-emails" class="mt-4 block text-left text-sm font-medium">ผู้รับ</label>
+        <input id="share-recipient-emails" class="swal2-input !mx-0 !w-full" type="text" autocomplete="off" placeholder="พิมพ์อีเมลเพื่อค้นหา หรือคั่นหลายคนด้วย comma">
+        <div id="share-recipient-suggestions" class="mt-2 max-h-32 overflow-y-auto text-left"></div>
+        <p class="mt-2 text-left text-xs text-slate-500">เลือกได้สูงสุด 20 คน เฉพาะผู้ใช้ที่อยู่ในระบบเท่านั้น</p>
+        <label for="share-expiry-days" class="mt-4 block text-left text-sm font-medium">ระยะเวลาการแชร์</label>
+        <select id="share-expiry-days" class="select select-bordered mt-1 w-full"><option value="1">1 วัน</option><option value="7" selected>7 วัน</option><option value="30">30 วัน</option><option value="90">90 วัน</option></select>
+        <label for="share-permission" class="mt-4 block text-left text-sm font-medium">สิทธิ์การเข้าถึง</label>
+        <select id="share-permission" class="select select-bordered mt-1 w-full"><option value="view">ดูอย่างเดียว</option><option value="download" selected>ดูและดาวน์โหลด</option></select>
+      `,
+      focusConfirm: false,
+      width: 'min(34rem, calc(100vw - 2rem))',
+      padding: '1.5rem',
+      customClass: { htmlContainer: 'text-left' },
+      didOpen: () => {
+        const popup = Swal.getPopup();
+        const fileInput = popup.querySelector('#share-file-path');
+        fileInput.value = `เลือกแล้ว ${selectedFiles.size} ไฟล์`;
+        fileInput.readOnly = true;
+        const input = popup.querySelector('#share-recipient-emails');
+        const suggestions = popup.querySelector('#share-recipient-suggestions');
+        let requestId = 0;
+        input.addEventListener('input', async () => {
+          const query = input.value.split(/[,;\n]/).pop().trim();
+          const currentRequest = ++requestId;
+          suggestions.replaceChildren();
+          if (query.length < 2) return;
+          try {
+            const response = await fetch(`{{ url_for('files.share_recipients') }}?q=${encodeURIComponent(query)}`);
+            if (!response.ok || currentRequest !== requestId) return;
+            const emails = await response.json();
+            emails.forEach((email) => {
+              const option = document.createElement('button');
+              option.type = 'button';
+              option.className = 'btn btn-ghost btn-sm w-full justify-start normal-case';
+              option.textContent = email;
+              option.addEventListener('click', () => {
+                const recipients = input.value.split(/[,;\n]/).map((value) => value.trim()).filter(Boolean);
+                recipients[recipients.length - 1] = email;
+                input.value = `${recipients.join(', ')}, `;
+                suggestions.replaceChildren();
+                input.focus();
+              });
+              suggestions.append(option);
+            });
+          } catch {
+            // Recipient suggestions are optional; server-side validation remains required.
+          }
+        });
+      },
+      showCancelButton: true,
+      confirmButtonText: 'แชร์',
+      cancelButtonText: 'ยกเลิก',
+      preConfirm: () => {
+        const emails = document.querySelector('#share-recipient-emails').value.trim();
+        const expiresInDays = document.querySelector('#share-expiry-days').value;
+        const permission = document.querySelector('#share-permission').value;
+        const recipients = [...new Set(emails.split(/[,;\n]+/).map((email) => email.trim().toLowerCase()).filter(Boolean))];
+        if (!recipients.length) {
+          Swal.showValidationMessage('กรุณาระบุอีเมลผู้รับ');
+          return false;
+        }
+        if (recipients.length > 20 || recipients.some((email) => !email.includes('@'))) {
+          Swal.showValidationMessage('กรุณาระบุอีเมลให้ถูกต้อง (สูงสุด 20 คน)');
+          return false;
+        }
+        return { recipients, expiresInDays, permission };
+      },
+    });
+    if (!isConfirmed) return;
+
+    const form = new FormData();
+    form.append('csrf_token', {{ csrf_token|tojson }});
+    selectedFiles.forEach((path) => form.append('file_paths', path));
+    form.append('recipient_emails', value.recipients.join(','));
+    form.append('permission', value.permission);
+    form.append('expires_in_days', value.expiresInDays);
+    try {
+      const response = await fetch('{{ url_for("files.share_file") }}', { method: 'POST', body: form });
+      if (!response.ok) throw new Error('Share request failed');
+      window.location.reload();
+    } catch {
+      await Swal.fire({ icon: 'error', title: 'ไม่สามารถแชร์ไฟล์ได้', text: 'กรุณาลองใหม่อีกครั้ง' });
+    }
+  }
+  function selectedRename() { selectedAction('Rename'); }
+  function selectedMove() { selectedAction('Move'); }
+  function selectedDownload() { selectedAction('Download'); }
+  function selectedDelete() { selectedAction('Delete'); }
+
+  const toolbarSelects = document.querySelectorAll('main select');
+  const sortField = toolbarSelects[0];
+  const sortDirection = toolbarSelects[1];
+  const fileFilter = toolbarSelects[2];
+  if (sortDirection) {
+    sortDirection.options[0].value = 'descending';
+    sortDirection.insertAdjacentHTML('beforeend', '<option value="ascending">Ascending</option>');
+  }
+  if (fileFilter) {
+    fileFilter.options[0].value = 'all';
+    fileFilter.insertAdjacentHTML('beforeend', '<option value="folders">Folders</option><option value="images">Images</option><option value="documents">Documents</option><option value="other">Other files</option>');
+  }
+
+  const browser = JSON.parse(document.querySelector('#folder-browser-data').textContent);
+  const searchInput = document.querySelector('main input[placeholder="Search files or folders"]');
+  const searchButton = searchInput?.nextElementSibling;
+  const selectAllButton = document.querySelector('main .btn-outline.btn-xs');
+  const isPreviewable = (file) => /\.(pdf|png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name);
+  const isImage = (file) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name);
+  const previewUrl = (file) => `{{ url_for('files.preview_file') }}?file=${encodeURIComponent(file.relative_path)}`;
+  const escapeHtml = (value) => value.replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]);
+  function openPreview(relativePath) {
+    const carouselFiles = browser.files.filter(isPreviewable);
+    let index = carouselFiles.findIndex((file) => file.relative_path === relativePath);
+    if (index < 0) return;
+    const renderPreview = () => {
+      const file = carouselFiles[index];
+      const media = isImage(file)
+        ? `<img class="max-h-[70vh] max-w-full object-contain" src="${previewUrl(file)}" alt="${escapeHtml(file.name)}">`
+        : `<iframe class="h-[70vh] w-full rounded border" src="${previewUrl(file)}#toolbar=0" title="${escapeHtml(file.name)}"></iframe>`;
+      Swal.update({ title: escapeHtml(file.name), html: `<div class="flex items-center justify-between gap-2"><button id="preview-previous" class="btn btn-circle btn-sm" aria-label="Previous">‹</button><div class="min-w-0 flex-1">${media}</div><button id="preview-next" class="btn btn-circle btn-sm" aria-label="Next">›</button></div><p class="mt-3 text-sm text-slate-500">${index + 1} / ${carouselFiles.length}</p>` });
+      Swal.getPopup().querySelector('#preview-previous').addEventListener('click', () => { index = (index - 1 + carouselFiles.length) % carouselFiles.length; renderPreview(); });
+      Swal.getPopup().querySelector('#preview-next').addEventListener('click', () => { index = (index + 1) % carouselFiles.length; renderPreview(); });
+    };
+    Swal.fire({ width: 'min(72rem, calc(100vw - 2rem))', showConfirmButton: false, showCloseButton: true, didOpen: renderPreview });
+  }
+  const browserSections = document.querySelectorAll('main section.mt-6');
+  const folderSection = browserSections[0];
+  const fileSection = browserSections[1];
+  if (folderSection && fileSection && sortField && sortDirection && fileFilter) {
+    const parseSize = (value) => Number.parseFloat(value) * (value.includes('GB') ? 1024 ** 3 : value.includes('MB') ? 1024 ** 2 : 1024);
+    const fileCategory = (file) => {
+      const extension = file.name.split('.').pop().toLowerCase();
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(extension)) return 'images';
+      if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv'].includes(extension)) return 'documents';
+      return 'other';
+    };
+    const sortItems = (items) => [...items].sort((left, right) => {
+      const field = sortField.value;
+      const direction = sortDirection.value === 'ascending' ? 1 : -1;
+      const values = field === 'name' ? [left.name, right.name] : field === 'size' ? [parseSize(left.size), parseSize(right.size)] : field === 'type' ? [left.name.split('.').pop(), right.name.split('.').pop()] : [Date.parse(left.created_at), Date.parse(right.created_at)];
+      return typeof values[0] === 'string' ? direction * values[0].localeCompare(values[1]) : direction * (values[0] - values[1]);
+    });
+    const renderBrowser = () => {
+      const filter = fileFilter.value;
+      const searchTerm = searchInput?.value.trim().toLocaleLowerCase() || '';
+      const matchesSearch = (item) => !searchTerm || item.name.toLocaleLowerCase().includes(searchTerm);
+      const folders = filter === 'all' || filter === 'folders' ? sortItems(browser.folders.filter(matchesSearch)) : [];
+      const files = filter === 'folders' ? [] : sortItems(browser.files.filter((file) => matchesSearch(file) && (filter === 'all' || fileCategory(file) === filter)));
+      folderSection.hidden = filter !== 'all' && filter !== 'folders';
+      fileSection.hidden = filter === 'folders';
+      folderSection.querySelector('h2').innerHTML = `Folders <span class="ml-2 text-xs font-normal text-slate-400">${folders.length} items</span>`;
+      folderSection.querySelectorAll('article, a').forEach((card) => card.remove());
+      folders.forEach((folder) => {
+      const card = document.createElement('a');
+      card.className = 'mt-3 flex w-full max-w-69 items-center gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm hover:border-blue-300';
+      card.href = `/my-files/?folder=${encodeURIComponent(folder.relative_path)}`;
+      const icon = document.createElement('span'); icon.className = 'text-3xl'; icon.textContent = '📁';
+      const name = document.createElement('h3'); name.className = 'font-semibold'; name.textContent = folder.name;
+      const details = document.createElement('div');
+      details.append(name);
+      [['Size', folder.size], ['Created by', folder.created_by], ['Created', folder.created_at]].forEach(([label, value]) => { const line = document.createElement('p'); line.className = 'text-[11px] text-slate-500'; line.textContent = `${label}: ${value}`; details.append(line); });
+      card.append(icon, details); folderSection.append(card);
+    });
+      fileSection.querySelector('h2').innerHTML = `Files <span class="ml-2 text-xs font-normal text-slate-400">${files.length} items</span>`;
+      fileSection.querySelectorAll('p, article').forEach((item) => item.remove());
+      if (!files.length) { const empty = document.createElement('p'); empty.className = 'mt-7 text-sm text-slate-500'; empty.textContent = 'No files match this filter.'; fileSection.append(empty); }
+      files.forEach((file) => {
+        const item = document.createElement('article');
+        item.className = 'mt-3 flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-4 text-sm';
+        const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.className = 'checkbox checkbox-primary mt-1'; checkbox.checked = selectedFiles.has(file.relative_path); checkbox.setAttribute('aria-label', `Select ${file.name}`);
+        checkbox.addEventListener('change', () => { if (checkbox.checked) selectedFiles.add(file.relative_path); else selectedFiles.delete(file.relative_path); });
+        const thumbnail = document.createElement('button'); thumbnail.type = 'button'; thumbnail.className = 'flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded border bg-slate-50 text-xs font-bold text-slate-500';
+        if (isImage(file)) { const image = document.createElement('img'); image.src = previewUrl(file); image.alt = ''; image.className = 'h-full w-full object-cover'; thumbnail.append(image); }
+        else if (/\.pdf$/i.test(file.name)) { const pdf = document.createElement('iframe'); pdf.src = `${previewUrl(file)}#toolbar=0&navpanes=0`; pdf.title = ''; pdf.tabIndex = -1; pdf.className = 'h-full w-full pointer-events-none'; thumbnail.append(pdf); }
+        else { thumbnail.textContent = /\.(rvt|rfa)$/i.test(file.name) ? 'RVT' : 'FILE'; }
+        if (isPreviewable(file)) thumbnail.addEventListener('click', () => openPreview(file.relative_path)); else thumbnail.disabled = true;
+        const details = document.createElement('div'); details.className = 'min-w-0 flex-1'; const name = document.createElement('h3'); name.className = 'truncate font-semibold'; name.textContent = file.name; details.append(name);
+        [['Size', file.size], ['Created by', file.created_by], ['Created', file.created_at]].forEach(([label, value]) => { const line = document.createElement('p'); line.className = 'text-[11px] text-slate-500'; line.textContent = `${label}: ${value}`; details.append(line); });
+        if (isPreviewable(file)) { const preview = document.createElement('button'); preview.type = 'button'; preview.className = 'btn btn-outline btn-xs mt-2'; preview.textContent = 'Preview'; preview.addEventListener('click', () => openPreview(file.relative_path)); details.append(preview); }
+        item.append(checkbox, thumbnail, details); fileSection.append(item);
+      });
+    };
+    [sortField, sortDirection, fileFilter].forEach((control) => control.addEventListener('change', renderBrowser));
+    searchInput?.addEventListener('input', renderBrowser);
+    searchButton?.addEventListener('click', renderBrowser);
+    selectAllButton?.addEventListener('click', () => { browser.files.forEach((file) => selectedFiles.add(file.relative_path)); renderBrowser(); });
+    renderBrowser();
+  }
+</script>
+{% endblock %}
