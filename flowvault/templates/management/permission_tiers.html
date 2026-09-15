@@ -3,9 +3,15 @@
 {% block content %}
 <main class="min-h-screen bg-[#f6f8fc] p-6 md:p-8">
   <div>
-    <p class="text-sm text-slate-400">Fixed permissions applied by the server to every file operation.</p>
+    <p class="text-sm text-slate-400">สิทธิ์ตายตัวที่ server บังคับใช้กับทุกการทำงานของไฟล์</p>
     <h2 class="mt-1 text-2xl font-bold">Permission Tiers</h2>
   </div>
+  <section class="mt-5 grid gap-3 text-sm md:grid-cols-2">
+    <article class="rounded-xl border border-blue-200 bg-blue-50 p-4"><strong>T1 — R, C, N, M, D — Full file access</strong><p class="mt-1 text-slate-600">Preview, Download, Create folder, Upload, Share, Rename, Move, Overwrite, Delete</p></article>
+    <article class="rounded-xl border border-sky-200 bg-sky-50 p-4"><strong>T2 — R, C, N, M — Create and modify, no delete</strong><p class="mt-1 text-slate-600">Preview, Download, Create folder, Upload, Share, Rename, Move, Overwrite</p></article>
+    <article class="rounded-xl border border-slate-200 bg-white p-4"><strong>T3 — R, C — Preview and download</strong><p class="mt-1 text-slate-600">Preview, Download</p></article>
+    <article class="rounded-xl border border-slate-200 bg-white p-4"><strong>T4 — R — Preview only</strong><p class="mt-1 text-slate-600">Preview</p></article>
+  </section>
   <section class="mt-8 overflow-x-auto rounded-xl border border-slate-200 bg-white">
     <table class="table">
       <thead><tr class="bg-slate-50 text-xs uppercase text-slate-500"><th>Tier</th><th>Description</th><th>R<br><span class="normal-case font-normal">Preview</span></th><th>C<br><span class="normal-case font-normal">Download</span></th><th>N<br><span class="normal-case font-normal">Create / share</span></th><th>M<br><span class="normal-case font-normal">Modify / overwrite</span></th><th>D<br><span class="normal-case font-normal">Delete</span></th><th>Users</th></tr></thead>

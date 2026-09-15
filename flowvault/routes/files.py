@@ -418,6 +418,57 @@ def rename_folder():
     return redirect(url_for("files.my_files", folder=destination.parent.relative_to(root).as_posix()))
 
 
+@files_bp.post("/folders/move")
+def move_folder():
+    permissions = _require_permission("can_modify")
+    if not permissions:
+        flash("คุณไม่มีสิทธิ์ย้ายโฟลเดอร์")
+        return redirect(url_for("files.my_files"))
+    root = _current_storage_root()
+    relative_path = request.form.get("folder_path", "").strip()
+    folder = _safe_directory_path(root, relative_path)
+    destination_directory = _safe_directory_path(root, request.form.get("destination_folder", ""))
+    if not folder or folder == root or not destination_directory:
+        flash("โฟลเดอร์ต้นทางหรือปลายทางไม่ถูกต้อง")
+        return redirect(url_for("files.my_files"))
+    try:
+        destination_directory.relative_to(folder)
+    except ValueError:
+        pass
+    else:
+        flash("ไม่สามารถย้ายโฟลเดอร์เข้าไปในตัวเองได้")
+        return redirect(url_for("files.my_files"))
+    destination = destination_directory / folder.name
+    if destination.exists():
+        flash("โฟลเดอร์ปลายทางมีไฟล์หรือโฟลเดอร์ชื่อนี้อยู่แล้ว")
+        return redirect(url_for("files.my_files"))
+    try:
+        os.replace(folder, destination)
+    except OSError:
+        flash("ไม่สามารถย้ายโฟลเดอร์ได้")
+        return redirect(url_for("files.my_files"))
+    new_relative_path = destination.relative_to(root).as_posix()
+    try:
+        with get_database_connection() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """UPDATE file_shares
+                   SET item_name=CONCAT(%s, SUBSTRING(item_name, %s))
+                   WHERE storage_root=%s AND (item_name=%s OR LEFT(item_name, CHAR_LENGTH(%s) + 1)=CONCAT(%s, '/'))""",
+                (new_relative_path, len(relative_path) + 1, _stored_scope(root), relative_path, relative_path, relative_path),
+            )
+            connection.commit()
+    except MySQLError:
+        try:
+            os.replace(destination, folder)
+        except OSError:
+            current_app.logger.exception("Could not restore folder after share update failure")
+        flash("ไม่สามารถบันทึกการย้ายโฟลเดอร์ได้ โปรดลองใหม่อีกครั้ง")
+        return redirect(url_for("files.my_files"))
+    record_event(session["user_email"], "folder_moved", f"{relative_path} -> {new_relative_path}")
+    flash("ย้ายโฟลเดอร์แล้ว")
+    return redirect(url_for("files.my_files", folder=destination_directory.relative_to(root).as_posix()))
+
+
 def _folder_download_response(folder: Path):
     """Create a ZIP in memory for a selected folder without exposing host paths."""
     archive = BytesIO()

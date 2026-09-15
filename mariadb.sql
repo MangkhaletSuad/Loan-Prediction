@@ -365,10 +365,10 @@ CREATE TABLE `permission_tiers` (
 --
 
 INSERT INTO `permission_tiers` (`id`, `tier_code`, `description`, `can_preview`, `can_download`, `can_create`, `can_modify`, `can_delete`, `enabled`, `created_at`) VALUES
-(1, 'T1', 'R, C, N, M, D — Full file access', 1, 1, 1, 1, 1, 1, '2026-09-07 10:00:32'),
-(2, 'T2', 'R, C, N, M — Create and modify, no delete', 1, 1, 1, 1, 0, 1, '2026-09-07 10:00:32'),
-(3, 'T3', 'R, C — Preview and download', 1, 1, 0, 0, 0, 1, '2026-09-07 10:00:32'),
-(4, 'T4', 'R — Preview only', 1, 0, 0, 0, 0, 1, '2026-09-07 10:00:32');
+(1, 'T1', 'Full file access — Preview, Download, Create, Upload, Share, Rename, Move, Overwrite, Delete', 1, 1, 1, 1, 1, 1, '2026-09-07 10:00:32'),
+(2, 'T2', 'Create and modify, no delete — Preview, Download, Create, Upload, Share, Rename, Move, Overwrite', 1, 1, 1, 1, 0, 1, '2026-09-07 10:00:32'),
+(3, 'T3', 'Preview and download — Preview, Download', 1, 1, 0, 0, 0, 1, '2026-09-07 10:00:32'),
+(4, 'T4', 'Preview only — Preview', 1, 0, 0, 0, 0, 1, '2026-09-07 10:00:32');
 
 -- --------------------------------------------------------
 

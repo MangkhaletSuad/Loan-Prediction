@@ -13,16 +13,14 @@ management_bp = Blueprint("management", __name__)
 
 VALID_ROLES = {"user", "department_admin", "super_admin"}
 TIER_DEFINITIONS = {
-    "T1": ("R, C, N, M, D — Full file access", 1, 1, 1, 1, 1),
-    "T2": ("R, C, N, M — Create and modify, no delete", 1, 1, 1, 1, 0),
-    "T3": ("R, C — Preview and download", 1, 1, 0, 0, 0),
-    "T4": ("R — Preview only", 1, 0, 0, 0, 0),
+    "T1": ("Full file access — Preview, Download, Create, Upload, Share, Rename, Move, Overwrite, Delete", 1, 1, 1, 1, 1),
+    "T2": ("Create and modify, no delete — Preview, Download, Create, Upload, Share, Rename, Move, Overwrite", 1, 1, 1, 1, 0),
+    "T3": ("Preview and download — Preview, Download", 1, 1, 0, 0, 0),
+    "T4": ("Preview only — Preview", 1, 0, 0, 0, 0),
 }
 
 
-def _tier_is_assignable(cursor, tier_code: str | None) -> bool:
-    if not tier_code:
-        return True
+def _tier_is_assignable(cursor, tier_code: str) -> bool:
     if tier_code not in TIER_DEFINITIONS:
         return False
     cursor.execute("SELECT 1 FROM permission_tiers WHERE tier_code=%s AND enabled=1", (tier_code,))
@@ -138,7 +136,7 @@ def users_permissions():
         action = request.form.get("action", "update")
         role = request.form.get("role", "user")
         department = request.form.get("department", "").strip() or None
-        tier = request.form.get("permission_tier", "").strip() or None
+        tier = request.form.get("permission_tier", "").strip()
         if not is_super_admin:
             if action != "add" or not current_department:
                 flash("คุณมีสิทธิ์เพิ่มผู้ใช้เฉพาะในฝ่ายของตนเอง")
