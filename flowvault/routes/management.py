@@ -2,6 +2,7 @@ from functools import wraps
 
 from datetime import datetime, timedelta
 from pathlib import Path
+import re
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import generate_password_hash
@@ -21,10 +22,20 @@ TIER_DEFINITIONS = {
 
 
 def _tier_is_assignable(cursor, tier_code: str) -> bool:
-    if tier_code not in TIER_DEFINITIONS:
-        return False
     cursor.execute("SELECT 1 FROM permission_tiers WHERE tier_code=%s AND enabled=1", (tier_code,))
     return cursor.fetchone() is not None
+
+
+def _tier_rights_from_form() -> tuple[int, int, int, int, int]:
+    return tuple(int(request.form.get(field) == "on") for field in (
+        "can_preview", "can_download", "can_create", "can_modify", "can_delete",
+    ))
+
+
+def _tier_rights_description(rights: tuple[int, int, int, int, int]) -> str:
+    labels = ("Preview", "Download", "Create / share", "Modify / overwrite", "Delete")
+    selected = [label for label, allowed in zip(labels, rights) if allowed]
+    return ", ".join(selected) if selected else "No file permissions"
 
 
 def ensure_management_schema(cursor) -> None:
@@ -68,9 +79,7 @@ def ensure_management_schema(cursor) -> None:
         """INSERT INTO permission_tiers
            (tier_code, description, can_preview, can_download, can_create, can_modify, can_delete, enabled)
            VALUES (%s, %s, %s, %s, %s, %s, %s, 1)
-           ON DUPLICATE KEY UPDATE description=VALUES(description), can_preview=VALUES(can_preview),
-             can_download=VALUES(can_download), can_create=VALUES(can_create), can_modify=VALUES(can_modify),
-             can_delete=VALUES(can_delete), enabled=1""",
+           ON DUPLICATE KEY UPDATE tier_code=VALUES(tier_code)""",
         [(code, *definition) for code, definition in TIER_DEFINITIONS.items()],
     )
     cursor.execute(
@@ -195,7 +204,7 @@ def users_permissions():
             departments = cursor.fetchall()
         else:
             departments = [{"name": current_department}] if current_department else []
-        cursor.execute("SELECT tier_code, description FROM permission_tiers WHERE tier_code IN ('T1', 'T2', 'T3', 'T4') AND enabled=1 ORDER BY FIELD(tier_code, 'T1', 'T2', 'T3', 'T4')")
+        cursor.execute("SELECT tier_code, description FROM permission_tiers WHERE enabled=1 ORDER BY CAST(SUBSTRING(tier_code, 2) AS UNSIGNED), tier_code")
         tiers = cursor.fetchall()
     return render_template("management/users.html", users=users, departments=departments, tiers=tiers, is_super_admin=is_super_admin, current_department=current_department)
 
@@ -306,12 +315,57 @@ def departments():
     return render_template("management/departments.html", departments=departments)
 
 
-@management_bp.get("/admin/permission-tiers")
+@management_bp.route("/admin/permission-tiers", methods=["GET", "POST"])
 @require_roles("super_admin")
 def permission_tiers():
+    if request.method == "POST":
+        action = request.form.get("action", "save")
+        rights = _tier_rights_from_form()
+        description = request.form.get("description", "").strip()[:255] or _tier_rights_description(rights)
+        with get_database_connection() as connection, connection.cursor() as cursor:
+            ensure_management_schema(cursor)
+            if action == "create":
+                tier_code = request.form.get("tier_code", "").strip().upper()
+                if not re.fullmatch(r"T[1-9][0-9]*", tier_code):
+                    flash("รหัส Custom Tier ต้องเป็น T ตามด้วยตัวเลข เช่น T5 หรือ T6")
+                    return redirect(url_for("management.permission_tiers"))
+                cursor.execute(
+                    "INSERT INTO permission_tiers (tier_code, description, can_preview, can_download, can_create, can_modify, can_delete) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                    (tier_code, description, *rights),
+                )
+                record_event(session["user_email"], "permission_tier_created", tier_code)
+                flash(f"สร้าง Permission Tier {tier_code} แล้ว")
+            elif action == "delete" and request.form.get("tier_id", "").isdigit():
+                cursor.execute("SELECT tier_code FROM permission_tiers WHERE id=%s", (request.form["tier_id"],))
+                tier = cursor.fetchone()
+                tier_match = re.fullmatch(r"T([1-9][0-9]*)", tier["tier_code"] if tier else "")
+                if not tier_match or int(tier_match.group(1)) < 5:
+                    flash("ลบได้เฉพาะ Custom Tier ตั้งแต่ T5 ขึ้นไป")
+                else:
+                    cursor.execute("SELECT COUNT(*) AS users FROM users WHERE permission_tier=%s", (tier["tier_code"],))
+                    if cursor.fetchone()["users"]:
+                        flash(f"ไม่สามารถลบ {tier['tier_code']} ได้ เพราะยังมีผู้ใช้กำหนด Tier นี้อยู่")
+                    else:
+                        cursor.execute("DELETE FROM permission_tiers WHERE id=%s", (request.form["tier_id"],))
+                        record_event(session["user_email"], "permission_tier_deleted", tier["tier_code"])
+                        flash(f"ลบ Permission Tier {tier['tier_code']} แล้ว")
+            elif action == "save" and request.form.get("tier_id", "").isdigit():
+                cursor.execute(
+                    "UPDATE permission_tiers SET description=%s, can_preview=%s, can_download=%s, can_create=%s, can_modify=%s, can_delete=%s WHERE id=%s",
+                    (description, *rights, request.form["tier_id"]),
+                )
+                if cursor.rowcount:
+                    record_event(session["user_email"], "permission_tier_saved", f"tier_id={request.form['tier_id']}")
+                    flash("บันทึก Permission Tier แล้ว")
+                else:
+                    flash("ไม่พบ Permission Tier ที่ต้องการบันทึก")
+            else:
+                flash("ข้อมูล Permission Tier ไม่ถูกต้อง")
+            connection.commit()
+        return redirect(url_for("management.permission_tiers"))
     with get_database_connection() as connection, connection.cursor() as cursor:
         ensure_management_schema(cursor)
         connection.commit()
-        cursor.execute("SELECT t.*, COUNT(u.id) AS users FROM permission_tiers t LEFT JOIN users u ON BINARY u.permission_tier=BINARY t.tier_code WHERE t.tier_code IN ('T1', 'T2', 'T3', 'T4') GROUP BY t.id ORDER BY FIELD(t.tier_code, 'T1', 'T2', 'T3', 'T4')")
+        cursor.execute("SELECT t.*, COUNT(u.id) AS users FROM permission_tiers t LEFT JOIN users u ON BINARY u.permission_tier=BINARY t.tier_code GROUP BY t.id ORDER BY CAST(SUBSTRING(t.tier_code, 2) AS UNSIGNED), t.tier_code")
         tiers = cursor.fetchall()
     return render_template("management/permission_tiers.html", tiers=tiers)

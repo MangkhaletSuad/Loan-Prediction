@@ -3,8 +3,7 @@
 {% block styles %}
 <style>
   .folder-panel { width: 256px; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; box-shadow: 0 8px 24px rgb(15 23 42 / 6%); }
-  .folder-panel-head { display: flex; align-items: center; justify-content: space-between; padding: 0 0 10px; border-bottom: 1px solid #e2e8f0; }
-  .folder-panel-head button { width: 27px; height: 27px; border: 1px solid #dbe4f0; border-radius: 8px; color: #2563eb; background: #fff; font-size: 18px; line-height: 1; }
+  .folder-panel-head { padding: 0 0 10px; border-bottom: 1px solid #e2e8f0; }
   .folder-tree { margin-top: 15px; color: #374151; font-family: Tahoma, "Noto Sans Thai", sans-serif; font-size: 13px; }
   .folder-tree-title { margin: 0 0 7px 8px; color: #94a3b8; font-family: "Noto Sans Thai", sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
   .directory-node { position: relative; margin: 0; } .directory-node summary { list-style: none; } .directory-node summary::-webkit-details-marker { display: none; }
@@ -44,12 +43,12 @@
   </aside>
   <div id="sidebar-backdrop" class="fixed inset-0 z-40 hidden bg-slate-950/40 backdrop-blur-[1px]"></div>
   <div class="min-w-0">
-    <header class="border-b border-slate-200 bg-white/70 px-4 py-3 backdrop-blur md:px-7"><div class="flex items-center gap-4"><button id="header-sidebar-toggle" class="btn btn-square btn-ghost btn-sm hidden lg:inline-flex" aria-label="เปิดเมนู" aria-expanded="false">☰</button><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-xl font-bold lg:hidden">F</div><div class="hidden min-w-48 sm:block"><p class="text-xs text-slate-400">{{ today }}</p><h1 class="text-2xl font-bold leading-tight">My files</h1></div><a class="flex min-w-0 flex-1 items-center rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" href="{{ url_for('files.my_files') }}" aria-label="My files">My files</a><span class="badge badge-primary badge-outline hidden sm:inline-flex">{{ user_email }}</span><form action="{{ url_for('auth.logout') }}" method="post"><button class="btn btn-error btn-sm text-white">ออกจากระบบ</button></form></div></header>
+    <header class="border-b border-slate-200 bg-white/70 px-4 py-3 backdrop-blur md:px-7"><div class="flex items-center gap-4"><button id="header-sidebar-toggle" class="btn btn-square btn-ghost btn-sm inline-flex" aria-label="เปิดเมนู" aria-controls="sidebar" aria-expanded="false">☰</button><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-xl font-bold lg:hidden">F</div><div class="hidden min-w-48 sm:block"><p class="text-xs text-slate-400">{{ today }}</p><h1 class="text-2xl font-bold leading-tight">My files</h1></div><a class="flex min-w-0 flex-1 items-center rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" href="{{ url_for('files.my_files') }}" aria-label="My files">My files</a><span class="badge badge-primary badge-outline hidden sm:inline-flex">{{ user_email }}</span><form action="{{ url_for('auth.logout') }}" method="post"><button class="btn btn-error btn-sm text-white">ออกจากระบบ</button></form></div></header>
     <main class="flex gap-6 p-4 md:p-7">
       <nav class="folder-panel hidden h-fit shrink-0 lg:block" aria-label="Folders">
         {% macro disk_folder(node) -%}{% if node.children %}<details class="directory-node" open><summary class="directory-summary"><span class="tree-branch" aria-hidden="true"></span><a class="folder-tree-link" href="{{ url_for('files.my_files', folder=node.relative_path) }}" title="{{ node.name }}"><span class="tree-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M3 5.5A2.5 2.5 0 0 1 5.5 3H10l2 2h6.5A2.5 2.5 0 0 1 21 7.5v9A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-11Z"/></svg></span><span class="tree-name">{{ node.name }}</span></a></summary><div class="directory-children">{% for child in node.children %}{{ disk_folder(child) }}{% endfor %}</div></details>{% else %}<div class="directory-node"><div class="directory-summary"><span class="tree-branch" aria-hidden="true"></span><a class="folder-tree-link" href="{{ url_for('files.my_files', folder=node.relative_path) }}" title="{{ node.name }}"><span class="tree-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M3 5.5A2.5 2.5 0 0 1 5.5 3H10l2 2h6.5A2.5 2.5 0 0 1 21 7.5v9A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-11Z"/></svg></span><span class="tree-name">{{ node.name }}</span></a></div></div>{% endif %}{%- endmacro %}
         {% macro folder_link(id, name) -%}<a class="folder-tree-link" href="{{ url_for('files.my_files', folder=id) }}" title="{{ name }}"><span class="tree-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M3 5.5A2.5 2.5 0 0 1 5.5 3H10l2 2h6.5A2.5 2.5 0 0 1 21 7.5v9A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-11Z"/></svg></span><span class="tree-name">{{ name }}</span></a>{%- endmacro %}
-        <div class="folder-panel-head"><strong>Folders</strong><button type="button" title="New folder" {% if not permissions.can_create %}disabled{% endif %} onclick="document.getElementById('folder-modal').showModal()">+</button></div>
+        <div class="folder-panel-head"><strong>Folders</strong></div>
         <div class="folder-tree"><div class="folder-tree-title">My folders</div>{% for folder in folder_tree %}{{ disk_folder(folder) }}{% else %}<p class="px-2 py-4 text-sm text-slate-400">ยังไม่มีโฟลเดอร์ใน storage</p>{% endfor %}</div>
         {% if can_restore %}<a class="btn btn-outline btn-sm mt-4 w-full" href="{{ url_for('files.recycle_bin') }}">♻ Recycle Bin</a>{% endif %}
         {% if false %}<div class="folder-tree"><div class="folder-tree-title">My folders</div>
@@ -74,7 +73,7 @@
   </div>
   <script id="folder-browser-data" type="application/json">{{ browser|tojson }}</script>
   <dialog id="folder-modal" class="modal"><div class="modal-box"><h3 class="text-lg font-bold">New folder</h3><form action="{{ url_for('files.create_folder') }}" method="post" class="mt-4"><input type="hidden" name="folder" value="{{ browser.relative_path }}"><label class="fieldset"><span class="fieldset-legend">Folder name</span><input class="input input-bordered w-full" name="name" placeholder="e.g. Project files" maxlength="255" required autofocus></label><div class="modal-action"><button type="button" class="btn" onclick="document.getElementById('folder-modal').close()">Cancel</button><button class="btn btn-primary">Create folder</button></div></form></div><form method="dialog" class="modal-backdrop"><button aria-label="Close">close</button></form></dialog>
-  <dialog id="upload-modal" class="modal"><div class="modal-box"><h3 class="text-lg font-bold">Upload file</h3><form action="{{ url_for('files.upload_file') }}" method="post" enctype="multipart/form-data" class="mt-4"><input type="hidden" name="folder" value="{{ browser.relative_path }}"><label class="fieldset"><span class="fieldset-legend">File</span><input class="file-input file-input-bordered w-full" name="file" type="file" required></label>{% if permissions.can_modify %}<label class="mt-3 flex items-center gap-2 text-sm"><input class="checkbox checkbox-primary checkbox-sm" name="overwrite" type="checkbox">บันทึกทับเมื่อมีไฟล์ชื่อเดิม</label>{% endif %}<p class="mt-2 text-xs text-slate-500">ขนาดสูงสุด 64 MB และต้องเป็นประเภทไฟล์ที่ผู้ดูแลอนุญาต</p><div class="modal-action"><button type="button" class="btn" onclick="upload_modal.close()">Cancel</button><button class="btn btn-primary">Upload</button></div></form></div><form method="dialog" class="modal-backdrop"><button aria-label="Close">close</button></form></dialog>
+  <dialog id="upload-modal" class="modal"><div class="modal-box"><h3 class="text-lg font-bold">Upload file</h3><form id="upload-form" action="{{ url_for('files.upload_file') }}" method="post" enctype="multipart/form-data" class="mt-4"><input type="hidden" name="folder" value="{{ browser.relative_path }}"><label class="fieldset"><span class="fieldset-legend">File</span><input class="file-input file-input-bordered w-full" name="file" type="file" required></label>{% if permissions.can_modify %}<label class="mt-3 flex items-center gap-2 text-sm"><input class="checkbox checkbox-primary checkbox-sm" name="overwrite" type="checkbox">บันทึกทับเมื่อมีไฟล์ชื่อเดิม</label>{% endif %}<p class="mt-2 text-xs text-slate-500">ขนาดสูงสุด 500 MB และต้องเป็นประเภทไฟล์ที่ผู้ดูแลอนุญาต</p><div id="upload-progress" class="mt-4 hidden" role="status" aria-live="polite"><div class="mb-1 flex justify-between text-sm"><span id="upload-progress-label">กำลังเตรียมอัปโหลด</span><span id="upload-progress-percent">0%</span></div><progress id="upload-progress-bar" class="progress progress-primary h-3 w-full" value="0" max="100">0%</progress></div><div class="modal-action"><button id="upload-cancel" type="button" class="btn">Cancel</button><button id="upload-submit" class="btn btn-primary">Upload</button></div></form></div><form method="dialog" class="modal-backdrop"><button aria-label="Close">close</button></form></dialog>
 </div>
 {% endblock %}
 {% block scripts %}
@@ -109,8 +108,86 @@
   if (selectionHint) selectionHint.textContent = 'ดับเบิลคลิกที่ไฟล์หรือโฟลเดอร์เพื่อเลือกอีกครั้งเพื่อยกเลิกเลือก';
   const newFolderButton = document.querySelector('.top-actions')?.nextElementSibling;
   const uploadButton = newFolderButton?.nextElementSibling;
-  {% if permissions.can_create %}uploadButton?.addEventListener('click', () => document.querySelector('#upload-modal').showModal());{% else %}if (uploadButton) { uploadButton.disabled = true; uploadButton.title = 'คุณไม่มีสิทธิ์สร้างไฟล์ใหม่'; }{% endif %}
+  {% if permissions.can_create %}uploadButton?.addEventListener('click', () => { resetUploadDialog(); uploadModal?.showModal(); });{% else %}if (uploadButton) { uploadButton.disabled = true; uploadButton.title = 'คุณไม่มีสิทธิ์สร้างไฟล์ใหม่'; }{% endif %}
   {% if permissions.can_create %}newFolderButton?.addEventListener('click', () => document.querySelector('#folder-modal').showModal());{% else %}if (newFolderButton) { newFolderButton.disabled = true; newFolderButton.title = 'คุณไม่มีสิทธิ์สร้างโฟลเดอร์'; }{% endif %}
+  const uploadModal = document.querySelector('#upload-modal');
+  const uploadForm = document.querySelector('#upload-form');
+  const uploadProgress = document.querySelector('#upload-progress');
+  const uploadProgressBar = document.querySelector('#upload-progress-bar');
+  const uploadProgressLabel = document.querySelector('#upload-progress-label');
+  const uploadProgressPercent = document.querySelector('#upload-progress-percent');
+  const uploadCancel = document.querySelector('#upload-cancel');
+  const uploadSubmit = document.querySelector('#upload-submit');
+  let activeUpload = null;
+  let uploadCompleted = false;
+  const setUploadProgress = (percent, label) => {
+    uploadProgress?.classList.remove('hidden');
+    if (uploadProgressBar) uploadProgressBar.value = percent;
+    if (uploadProgressPercent) uploadProgressPercent.textContent = `${percent}%`;
+    if (uploadProgressLabel) uploadProgressLabel.textContent = label;
+  };
+  const setUploadBusy = (busy) => {
+    uploadForm?.querySelectorAll('input[type="file"], input[type="checkbox"]').forEach((control) => { control.disabled = busy; });
+    if (uploadSubmit) { uploadSubmit.disabled = busy; uploadSubmit.textContent = busy ? 'Uploading…' : 'Upload'; }
+    if (uploadCancel) uploadCancel.textContent = busy ? 'Cancel upload' : 'Cancel';
+  };
+  const finishUpload = () => { activeUpload = null; setUploadBusy(false); };
+  const resetUploadDialog = () => {
+    if (activeUpload) return;
+    uploadCompleted = false;
+    setUploadBusy(false);
+    uploadProgress?.classList.add('hidden');
+    if (uploadProgressBar) uploadProgressBar.value = 0;
+    if (uploadProgressPercent) uploadProgressPercent.textContent = '0%';
+    if (uploadProgressLabel) uploadProgressLabel.textContent = 'กำลังเตรียมอัปโหลด';
+    if (uploadSubmit) uploadSubmit.classList.remove('hidden');
+    const fileInput = uploadForm?.querySelector('input[type="file"]');
+    if (fileInput) fileInput.value = '';
+  };
+  uploadCancel?.addEventListener('click', () => {
+    if (activeUpload) { activeUpload.abort(); return; }
+    if (uploadCompleted) { window.location.reload(); return; }
+    uploadModal?.close();
+  });
+  uploadForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    if (activeUpload) return;
+    const selectedFile = uploadForm.elements.file.files[0];
+    if (!selectedFile) return;
+    // FormData only includes enabled controls. Capture the chosen file before
+    // locking the form to prevent a second upload click.
+    const uploadData = new FormData(uploadForm);
+    const request = new XMLHttpRequest();
+    activeUpload = request;
+    setUploadBusy(true);
+    setUploadProgress(0, 'กำลังเริ่มอัปโหลด');
+    request.open('POST', uploadForm.action);
+    request.setRequestHeader('Accept', 'application/json');
+    request.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    request.upload.addEventListener('progress', (progressEvent) => {
+      if (!progressEvent.lengthComputable) return;
+      setUploadProgress(Math.min(100, Math.round((progressEvent.loaded / progressEvent.total) * 100)), 'กำลังอัปโหลดไฟล์');
+    });
+    request.upload.addEventListener('load', () => setUploadProgress(100, 'กำลังบันทึกไฟล์'));
+    request.addEventListener('load', () => {
+      let response = null;
+      try { response = JSON.parse(request.responseText); } catch (_) { /* Server returned an unexpected response. */ }
+      if (request.status >= 200 && request.status < 300 && response?.ok) {
+        finishUpload();
+        uploadCompleted = true;
+        setUploadProgress(100, 'อัปโหลดสำเร็จ กดปิดและรีเฟรชรายการเพื่อดูไฟล์');
+        uploadForm?.querySelectorAll('input[type="file"], input[type="checkbox"]').forEach((control) => { control.disabled = true; });
+        if (uploadSubmit) uploadSubmit.classList.add('hidden');
+        if (uploadCancel) uploadCancel.textContent = 'ปิดและรีเฟรชรายการ';
+        return;
+      }
+      finishUpload();
+      setUploadProgress(0, response?.message || (request.status === 413 ? 'ไฟล์มีขนาดเกิน 500 MB' : 'อัปโหลดไม่สำเร็จ โปรดลองใหม่'));
+    });
+    request.addEventListener('error', () => { finishUpload(); setUploadProgress(0, 'เชื่อมต่อ server ไม่สำเร็จ โปรดลองใหม่'); });
+    request.addEventListener('abort', () => { finishUpload(); setUploadProgress(0, 'ยกเลิกการอัปโหลดแล้ว'); });
+    request.send(uploadData);
+  });
   const actionButton = (title) => [...document.querySelectorAll('button')].find((button) => button.title === title);
   const toolbarButtons = Object.fromEntries(['Activity log', 'Share', 'Rename', 'Move', 'Download', 'Delete'].map((title) => [title, actionButton(title)]));
   const toolbarPermissions = {
@@ -169,10 +246,13 @@
       html: `
         <label for="share-file-path" class="block text-left text-sm font-medium">ชื่อไฟล์</label>
         <input id="share-file-path" class="swal2-input !mx-0 !w-full" placeholder="relative path ของไฟล์">
-        <label for="share-recipient-emails" class="mt-4 block text-left text-sm font-medium">ผู้รับ</label>
-        <input id="share-recipient-emails" class="swal2-input !mx-0 !w-full" type="text" autocomplete="off" placeholder="พิมพ์อีเมลเพื่อค้นหา หรือคั่นหลายคนด้วย comma">
-        <div id="share-recipient-suggestions" class="mt-2 max-h-32 overflow-y-auto text-left"></div>
-        <p class="mt-2 text-left text-xs text-slate-500">เลือกได้สูงสุด 20 คน เฉพาะผู้ใช้ที่อยู่ในระบบเท่านั้น</p>
+        <label class="mt-4 block text-left text-sm font-medium">เลือกผู้รับ</label>
+        <div class="mt-1 rounded-lg border border-slate-200 bg-slate-50 p-3"><div class="flex items-center justify-between gap-3"><span class="text-sm font-medium">ผู้ที่มีสิทธิ์เข้าถึง</span><span id="share-recipient-count" class="text-xs text-slate-500">เลือก 0 คน</span></div><div id="share-selected-recipients" class="mt-2 flex min-h-6 flex-wrap gap-2 text-sm text-slate-500">ยังไม่ได้เลือกผู้รับ</div></div>
+        <details id="share-recipient-dropdown" class="group mt-1 rounded-lg border border-slate-300 bg-white">
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-sm"><span>ค้นหาและเพิ่มผู้รับ</span><span class="text-xs text-slate-500 transition-transform group-open:rotate-180">⌄</span></summary>
+          <div class="border-t border-slate-200 p-2"><input id="share-recipient-filter" class="input input-bordered input-sm w-full" type="search" autocomplete="off" placeholder="ค้นหาอีเมล"><div id="share-recipient-list" class="mt-2 max-h-52 overflow-y-auto text-left"></div></div>
+        </details>
+        <p class="mt-2 text-left text-xs text-slate-500">ติ๊กเลือกผู้รับได้หลายคน สูงสุด 20 คน และไม่สามารถเลือกบัญชีของตนเองได้</p>
         <label for="share-expiry-days" class="mt-4 block text-left text-sm font-medium">ระยะเวลาการแชร์</label>
         <select id="share-expiry-days" class="select select-bordered mt-1 w-full"><option value="1">1 วัน</option><option value="7" selected>7 วัน</option><option value="30">30 วัน</option><option value="90">90 วัน</option></select>
         <label for="share-permission" class="mt-4 block text-left text-sm font-medium">สิทธิ์การเข้าถึง</label>
@@ -187,51 +267,61 @@
         const fileInput = popup.querySelector('#share-file-path');
         fileInput.value = `เลือกแล้ว ${selectedFiles.size} ไฟล์, ${selectedFolders.size} โฟลเดอร์`;
         fileInput.readOnly = true;
-        const input = popup.querySelector('#share-recipient-emails');
-        const suggestions = popup.querySelector('#share-recipient-suggestions');
-        let requestId = 0;
-        input.addEventListener('input', async () => {
-          const query = input.value.split(/[,;\n]/).pop().trim();
-          const currentRequest = ++requestId;
-          suggestions.replaceChildren();
-          if (query.length < 2) return;
-          try {
-            const response = await fetch(`{{ url_for('files.share_recipients') }}?q=${encodeURIComponent(query)}`);
-            if (!response.ok || currentRequest !== requestId) return;
-            const emails = await response.json();
-            emails.forEach((email) => {
-              const option = document.createElement('button');
-              option.type = 'button';
-              option.className = 'btn btn-ghost btn-sm w-full justify-start normal-case';
-              option.textContent = email;
-              option.addEventListener('click', () => {
-                const recipients = input.value.split(/[,;\n]/).map((value) => value.trim()).filter(Boolean);
-                recipients[recipients.length - 1] = email;
-                input.value = `${recipients.join(', ')}, `;
-                suggestions.replaceChildren();
-                input.focus();
-              });
-              suggestions.append(option);
+        const filter = popup.querySelector('#share-recipient-filter');
+        const list = popup.querySelector('#share-recipient-list');
+        const count = popup.querySelector('#share-recipient-count');
+        const selectedList = popup.querySelector('#share-selected-recipients');
+        const selectedRecipients = new Set();
+        let recipientEmails = [];
+        const updateSelectedRecipients = () => {
+          count.textContent = `เลือก ${selectedRecipients.size} คน`;
+          selectedList.replaceChildren();
+          if (!selectedRecipients.size) { selectedList.textContent = 'ยังไม่ได้เลือกผู้รับ'; popup.dataset.selectedRecipients = '[]'; return; }
+          selectedRecipients.forEach((email) => {
+            const chip = document.createElement('span'); chip.className = 'inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800';
+            const text = document.createElement('span'); text.textContent = email;
+            const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'ml-1 font-bold text-blue-700 hover:text-blue-950'; remove.textContent = '×'; remove.setAttribute('aria-label', `ลบ ${email}`);
+            remove.addEventListener('click', () => { selectedRecipients.delete(email); updateSelectedRecipients(); renderRecipients(recipientEmails); });
+            chip.append(text, remove); selectedList.append(chip);
+          });
+          popup.dataset.selectedRecipients = JSON.stringify([...selectedRecipients]);
+        };
+        const renderRecipients = (emails) => {
+          const query = filter.value.trim().toLowerCase();
+          list.replaceChildren();
+          const matches = emails.filter((email) => email.includes(query));
+          if (!matches.length) { list.textContent = 'ไม่พบผู้ใช้'; return; }
+          matches.forEach((email) => {
+            const label = document.createElement('label');
+            label.className = 'flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 hover:bg-slate-50';
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox'; checkbox.className = 'checkbox checkbox-primary checkbox-sm'; checkbox.checked = selectedRecipients.has(email);
+            checkbox.addEventListener('change', () => {
+              if (checkbox.checked && selectedRecipients.size >= 20) { checkbox.checked = false; Swal.showValidationMessage('เลือกผู้รับได้สูงสุด 20 คน'); return; }
+              if (checkbox.checked) selectedRecipients.add(email); else selectedRecipients.delete(email);
+              updateSelectedRecipients(); Swal.resetValidationMessage();
             });
-          } catch {
-            // Recipient suggestions are optional; server-side validation remains required.
-          }
-        });
+            const text = document.createElement('span'); text.className = 'text-sm'; text.textContent = email;
+            label.append(checkbox, text); list.append(label);
+          });
+        };
+        filter.addEventListener('input', () => renderRecipients(recipientEmails));
+        fetch('{{ url_for("files.share_recipients") }}').then((response) => response.ok ? response.json() : []).then((emails) => { recipientEmails = emails; renderRecipients(emails); }).catch(() => { list.textContent = 'ไม่สามารถโหลดรายชื่อผู้ใช้ได้'; });
+        updateSelectedRecipients();
       },
       showCancelButton: true,
       confirmButtonText: 'แชร์',
       cancelButtonText: 'ยกเลิก',
       preConfirm: () => {
-        const emails = document.querySelector('#share-recipient-emails').value.trim();
         const expiresInDays = document.querySelector('#share-expiry-days').value;
         const permission = document.querySelector('#share-permission').value;
-        const recipients = [...new Set(emails.split(/[,;\n]+/).map((email) => email.trim().toLowerCase()).filter(Boolean))];
+        const recipients = JSON.parse(Swal.getPopup().dataset.selectedRecipients || '[]');
         if (!recipients.length) {
-          Swal.showValidationMessage('กรุณาระบุอีเมลผู้รับ');
+          Swal.showValidationMessage('กรุณาเลือกผู้รับอย่างน้อย 1 คน');
           return false;
         }
-        if (recipients.length > 20 || recipients.some((email) => !email.includes('@'))) {
-          Swal.showValidationMessage('กรุณาระบุอีเมลให้ถูกต้อง (สูงสุด 20 คน)');
+        if (recipients.length > 20) {
+          Swal.showValidationMessage('เลือกผู้รับได้สูงสุด 20 คน');
           return false;
         }
         return { recipients, expiresInDays, permission };
@@ -290,7 +380,7 @@
   }
   async function selectedDelete() {
     if (!selectedCount()) return selectedAction('Delete');
-    const result = await Swal.fire({ icon: 'warning', title: `ลบ ${selectedCount()} รายการ?`, text: 'รายการจะถูกย้ายไป Recycle Bin และกู้คืนได้ภายใน 15 วัน', showCancelButton: true, confirmButtonText: 'ลบ', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#dc2626' });
+    const result = await Swal.fire({ icon: 'warning', title: `ลบ ${selectedCount()} รายการ?`, text: 'รายการจะถูกลบและกู้คืนได้ภายใน 15 วัน โดยแจ้งแอดมินฝ่ายได้ในกรณีที่ลบผิดโดยไม่ได้ตั้งใจ', showCancelButton: true, confirmButtonText: 'ลบ', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#dc2626' });
     if (!result.isConfirmed) return;
     try {
       if (selectedFiles.size) await submitSelectedFiles('{{ url_for("files.delete_files") }}', {}, false);
@@ -417,10 +507,6 @@
       details.append(name);
       [['Size', folder.size], ['Created by', folder.created_by], ['Created', folder.created_at]].forEach(([label, value]) => { const line = document.createElement('p'); line.className = 'text-[11px] text-slate-500'; line.textContent = `${label}: ${value}`; details.append(line); });
       openFolder.append(icon, details); card.append(openFolder);
-      {% if permissions.can_delete %}
-      const deleteButton = document.createElement('button'); deleteButton.type = 'button'; deleteButton.className = 'btn btn-ghost btn-sm text-error'; deleteButton.textContent = 'Delete';
-      deleteButton.addEventListener('click', () => deleteFolder(folder.relative_path)); card.append(deleteButton);
-      {% endif %}
       folderSection.append(card);
     });
       fileSection.querySelector('h2').innerHTML = `Files <span class="ml-2 text-xs font-normal text-slate-400">${files.length} items</span>`;

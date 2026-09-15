@@ -231,45 +231,54 @@ def _preview_response(file_path: Path):
 
 @files_bp.post("/upload")
 def upload_file():
+    is_async_upload = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+    def upload_failure(message: str, status: int = 400):
+        if is_async_upload:
+            return jsonify(ok=False, message=message), status
+        flash(message)
+        return redirect(url_for("files.my_files"))
+
     if "user_email" not in session:
+        if is_async_upload:
+            return jsonify(ok=False, message="กรุณาเข้าสู่ระบบใหม่"), 401
         return redirect(url_for("auth.login"))
     permissions = _current_user_permissions()
     if not permissions:
+        if is_async_upload:
+            return jsonify(ok=False, message="กรุณาเข้าสู่ระบบใหม่"), 401
         return redirect(url_for("auth.login"))
     uploaded = request.files.get("file")
     directory = _safe_directory_path(_current_storage_root(), request.form.get("folder", ""))
     original_name = _safe_new_name(uploaded.filename if uploaded else "")
-    if not uploaded or not directory or not original_name:
-        flash("ข้อมูลไฟล์หรือโฟลเดอร์ไม่ถูกต้อง")
-        return redirect(url_for("files.my_files"))
+    if not uploaded or not uploaded.filename:
+        return upload_failure("ไม่พบไฟล์ที่ส่งมา กรุณาเลือกไฟล์อีกครั้ง")
+    if not directory:
+        return upload_failure("ไม่พบโฟลเดอร์ปลายทาง กรุณารีเฟรชหน้าแล้วเลือกโฟลเดอร์อีกครั้ง")
+    if not original_name:
+        return upload_failure("ชื่อไฟล์ไม่ถูกต้อง: ห้ามมี / หรือ \\ และต้องมีความยาวไม่เกิน 255 ตัวอักษร")
     extension = Path(original_name).suffix.lower().lstrip(".")
     if extension == "svg":
-        flash("ไม่อนุญาตให้อัปโหลด SVG เพื่อป้องกัน script ที่เป็นอันตราย")
-        return redirect(url_for("files.my_files"))
+        return upload_failure("ไม่อนุญาตให้อัปโหลด SVG เพื่อป้องกัน script ที่เป็นอันตราย")
     with get_database_connection() as connection, connection.cursor() as cursor:
         cursor.execute("SELECT 1 FROM allowed_file_types WHERE extension=%s AND enabled=1", (extension,))
         allowed = cursor.fetchone()
     if not allowed:
-        flash("ประเภทไฟล์นี้ไม่ได้รับอนุญาตให้อัปโหลด")
-        return redirect(url_for("files.my_files"))
+        return upload_failure("ประเภทไฟล์นี้ไม่ได้รับอนุญาตให้อัปโหลด")
     destination = directory / original_name
     overwrite = request.form.get("overwrite") == "on"
     if destination.exists() and not permissions["can_modify"]:
-        flash("คุณไม่มีสิทธิ์บันทึกทับไฟล์เดิม")
-        return redirect(url_for("files.my_files"))
+        return upload_failure("คุณไม่มีสิทธิ์บันทึกทับไฟล์เดิม", 403)
     if not destination.exists() and not permissions["can_create"]:
-        flash("คุณไม่มีสิทธิ์สร้างไฟล์ใหม่")
-        return redirect(url_for("files.my_files"))
+        return upload_failure("คุณไม่มีสิทธิ์สร้างไฟล์ใหม่", 403)
     if destination.exists() and not overwrite:
-        flash("มีไฟล์ชื่อนี้อยู่แล้ว โปรดเลือกบันทึกทับไฟล์เดิม")
-        return redirect(url_for("files.my_files"))
+        return upload_failure("มีไฟล์ชื่อนี้อยู่แล้ว โปรดเลือกบันทึกทับไฟล์เดิม", 409)
     temporary = directory / f".{uuid4().hex}.uploading"
     try:
         uploaded.save(temporary)
         if temporary.stat().st_size > current_app.config["MAX_UPLOAD_BYTES"]:
             temporary.unlink(missing_ok=True)
-            flash("ไฟล์มีขนาดเกินกำหนด")
-            return redirect(url_for("files.my_files"))
+            return upload_failure("ไฟล์มีขนาดเกิน 500 MB", 413)
         if destination.exists():
             backup = directory / f".{uuid4().hex}.replacing"
             os.replace(destination, backup)
@@ -287,13 +296,14 @@ def upload_file():
             temporary.unlink()
     except FileExistsError:
         temporary.unlink(missing_ok=True)
-        flash("มีไฟล์ชื่อนี้อยู่แล้ว")
-        return redirect(url_for("files.my_files"))
+        return upload_failure("มีไฟล์ชื่อนี้อยู่แล้ว", 409)
     except OSError:
         temporary.unlink(missing_ok=True)
-        flash("ไม่สามารถบันทึกไฟล์ได้")
-        return redirect(url_for("files.my_files"))
-    record_event(session["user_email"], "upload_completed", destination.relative_to(_current_storage_root()).as_posix())
+        return upload_failure("ไม่สามารถบันทึกไฟล์ได้", 500)
+    relative_path = destination.relative_to(_current_storage_root()).as_posix()
+    record_event(session["user_email"], "upload_completed", relative_path)
+    if is_async_upload:
+        return jsonify(ok=True, message="อัปโหลดไฟล์แล้ว", path=relative_path), 201
     flash("อัปโหลดไฟล์แล้ว")
     return redirect(url_for("files.my_files", folder=request.form.get("folder", "")))
 
@@ -791,10 +801,11 @@ def share_recipients():
     if not _current_user_can_share():
         return jsonify([]), 403
     query = request.args.get("q", "").strip().lower()
-    if len(query) < 2:
-        return jsonify([])
     with get_database_connection() as connection, connection.cursor() as cursor:
-        cursor.execute("SELECT email FROM users WHERE email LIKE %s AND email<>%s ORDER BY email LIMIT 10", (f"%{query}%", session["user_email"]))
+        cursor.execute(
+            "SELECT email FROM users WHERE email<>%s AND (%s='' OR email LIKE %s) ORDER BY email",
+            (session["user_email"], query, f"%{query}%"),
+        )
         return jsonify([row["email"] for row in cursor.fetchall()])
 
 

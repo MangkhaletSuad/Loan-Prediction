@@ -27,7 +27,7 @@ Docker: MariaDB only (127.0.0.1:13306)
 | T3 | R, C | Preview and download: Preview, Download |
 | T4 | R | Preview only: Preview |
 
-R = Preview, C = Download, N = Create folder / Upload / Share, M = Rename / Move / Overwrite และ D = Delete ผู้ใช้ทุกคนต้องเลือก Tier ที่เปิดใช้งานอยู่ ไม่มีสิทธิ์แบบ Manual / none
+R = Preview, C = Download, N = Create folder / Upload / Share, M = Rename / Move / Overwrite และ D = Delete ผู้ใช้ทุกคนต้องเลือก Tier ที่เปิดใช้งานอยู่ ไม่มีสิทธิ์แบบ Manual / none ผู้ดูแลสูงสุดสามารถสร้าง Custom Tier เช่น T5 หรือ T6 และเลือกสิทธิ์แต่ละข้อด้วย checkbox ได้
 
 ## Recycle Bin
 

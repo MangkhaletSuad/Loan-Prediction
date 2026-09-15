@@ -776,7 +776,7 @@
         "kind": 2,
         "importPath": "flowvault.routes.files",
         "description": "flowvault.routes.files",
-        "peekOfCode": "def upload_file():\n    if \"user_email\" not in session:\n        return redirect(url_for(\"auth.login\"))\n    permissions = _current_user_permissions()\n    if not permissions:\n        return redirect(url_for(\"auth.login\"))\n    uploaded = request.files.get(\"file\")\n    directory = _safe_directory_path(_current_storage_root(), request.form.get(\"folder\", \"\"))\n    original_name = _safe_new_name(uploaded.filename if uploaded else \"\")\n    if not uploaded or not directory or not original_name:",
+        "peekOfCode": "def upload_file():\n    is_async_upload = request.headers.get(\"X-Requested-With\") == \"XMLHttpRequest\"\n    def upload_failure(message: str, status: int = 400):\n        if is_async_upload:\n            return jsonify(ok=False, message=message), status\n        flash(message)\n        return redirect(url_for(\"files.my_files\"))\n    if \"user_email\" not in session:\n        if is_async_upload:\n            return jsonify(ok=False, message=\"กรุณาเข้าสู่ระบบใหม่\"), 401",
         "detail": "flowvault.routes.files",
         "documentation": {}
     },
@@ -884,7 +884,7 @@
         "kind": 2,
         "importPath": "flowvault.routes.files",
         "description": "flowvault.routes.files",
-        "peekOfCode": "def share_recipients():\n    if \"user_email\" not in session:\n        return jsonify([]), 401\n    if not _current_user_can_share():\n        return jsonify([]), 403\n    query = request.args.get(\"q\", \"\").strip().lower()\n    if len(query) < 2:\n        return jsonify([])\n    with get_database_connection() as connection, connection.cursor() as cursor:\n        cursor.execute(\"SELECT email FROM users WHERE email LIKE %s AND email<>%s ORDER BY email LIMIT 10\", (f\"%{query}%\", session[\"user_email\"]))",
+        "peekOfCode": "def share_recipients():\n    if \"user_email\" not in session:\n        return jsonify([]), 401\n    if not _current_user_can_share():\n        return jsonify([]), 403\n    query = request.args.get(\"q\", \"\").strip().lower()\n    with get_database_connection() as connection, connection.cursor() as cursor:\n        cursor.execute(\n            \"SELECT email FROM users WHERE email<>%s AND (%s='' OR email LIKE %s) ORDER BY email\",\n            (session[\"user_email\"], query, f\"%{query}%\"),",
         "detail": "flowvault.routes.files",
         "documentation": {}
     },
@@ -1055,7 +1055,7 @@
         "kind": 2,
         "importPath": "flowvault.routes.management",
         "description": "flowvault.routes.management",
-        "peekOfCode": "def permission_tiers():\n    with get_database_connection() as connection, connection.cursor() as cursor:\n        ensure_management_schema(cursor)\n        connection.commit()\n        cursor.execute(\"SELECT t.*, COUNT(u.id) AS users FROM permission_tiers t LEFT JOIN users u ON BINARY u.permission_tier=BINARY t.tier_code WHERE t.tier_code IN ('T1', 'T2', 'T3', 'T4') GROUP BY t.id ORDER BY FIELD(t.tier_code, 'T1', 'T2', 'T3', 'T4')\")\n        tiers = cursor.fetchall()\n    return render_template(\"management/permission_tiers.html\", tiers=tiers)",
+        "peekOfCode": "def permission_tiers():\n    if request.method == \"POST\":\n        action = request.form.get(\"action\", \"save\")\n        rights = _tier_rights_from_form()\n        description = request.form.get(\"description\", \"\").strip()[:255] or _tier_rights_description(rights)\n        with get_database_connection() as connection, connection.cursor() as cursor:\n            ensure_management_schema(cursor)\n            if action == \"create\":\n                tier_code = request.form.get(\"tier_code\", \"\").strip().upper()\n                if not re.fullmatch(r\"T[1-9][0-9]*\", tier_code):",
         "detail": "flowvault.routes.management",
         "documentation": {}
     },
@@ -1064,7 +1064,7 @@
         "kind": 5,
         "importPath": "flowvault.routes.management",
         "description": "flowvault.routes.management",
-        "peekOfCode": "management_bp = Blueprint(\"management\", __name__)\nVALID_ROLES = {\"user\", \"department_admin\", \"super_admin\"}\nTIER_DEFINITIONS = {\n    \"T1\": (\"Full file access — Preview, Download, Create, Upload, Share, Rename, Move, Overwrite, Delete\", 1, 1, 1, 1, 1),\n    \"T2\": (\"Create and modify, no delete — Preview, Download, Create, Upload, Share, Rename, Move, Overwrite\", 1, 1, 1, 1, 0),\n    \"T3\": (\"Preview and download — Preview, Download\", 1, 1, 0, 0, 0),\n    \"T4\": (\"Preview only — Preview\", 1, 0, 0, 0, 0),\n}\ndef _tier_is_assignable(cursor, tier_code: str) -> bool:\n    if tier_code not in TIER_DEFINITIONS:",
+        "peekOfCode": "management_bp = Blueprint(\"management\", __name__)\nVALID_ROLES = {\"user\", \"department_admin\", \"super_admin\"}\nTIER_DEFINITIONS = {\n    \"T1\": (\"Full file access — Preview, Download, Create, Upload, Share, Rename, Move, Overwrite, Delete\", 1, 1, 1, 1, 1),\n    \"T2\": (\"Create and modify, no delete — Preview, Download, Create, Upload, Share, Rename, Move, Overwrite\", 1, 1, 1, 1, 0),\n    \"T3\": (\"Preview and download — Preview, Download\", 1, 1, 0, 0, 0),\n    \"T4\": (\"Preview only — Preview\", 1, 0, 0, 0, 0),\n}\ndef _tier_is_assignable(cursor, tier_code: str) -> bool:\n    cursor.execute(\"SELECT 1 FROM permission_tiers WHERE tier_code=%s AND enabled=1\", (tier_code,))",
         "detail": "flowvault.routes.management",
         "documentation": {}
     },
@@ -1073,7 +1073,7 @@
         "kind": 5,
         "importPath": "flowvault.routes.management",
         "description": "flowvault.routes.management",
-        "peekOfCode": "VALID_ROLES = {\"user\", \"department_admin\", \"super_admin\"}\nTIER_DEFINITIONS = {\n    \"T1\": (\"Full file access — Preview, Download, Create, Upload, Share, Rename, Move, Overwrite, Delete\", 1, 1, 1, 1, 1),\n    \"T2\": (\"Create and modify, no delete — Preview, Download, Create, Upload, Share, Rename, Move, Overwrite\", 1, 1, 1, 1, 0),\n    \"T3\": (\"Preview and download — Preview, Download\", 1, 1, 0, 0, 0),\n    \"T4\": (\"Preview only — Preview\", 1, 0, 0, 0, 0),\n}\ndef _tier_is_assignable(cursor, tier_code: str) -> bool:\n    if tier_code not in TIER_DEFINITIONS:\n        return False",
+        "peekOfCode": "VALID_ROLES = {\"user\", \"department_admin\", \"super_admin\"}\nTIER_DEFINITIONS = {\n    \"T1\": (\"Full file access — Preview, Download, Create, Upload, Share, Rename, Move, Overwrite, Delete\", 1, 1, 1, 1, 1),\n    \"T2\": (\"Create and modify, no delete — Preview, Download, Create, Upload, Share, Rename, Move, Overwrite\", 1, 1, 1, 1, 0),\n    \"T3\": (\"Preview and download — Preview, Download\", 1, 1, 0, 0, 0),\n    \"T4\": (\"Preview only — Preview\", 1, 0, 0, 0, 0),\n}\ndef _tier_is_assignable(cursor, tier_code: str) -> bool:\n    cursor.execute(\"SELECT 1 FROM permission_tiers WHERE tier_code=%s AND enabled=1\", (tier_code,))\n    return cursor.fetchone() is not None",
         "detail": "flowvault.routes.management",
         "documentation": {}
     },
@@ -1082,7 +1082,7 @@
         "kind": 5,
         "importPath": "flowvault.routes.management",
         "description": "flowvault.routes.management",
-        "peekOfCode": "TIER_DEFINITIONS = {\n    \"T1\": (\"Full file access — Preview, Download, Create, Upload, Share, Rename, Move, Overwrite, Delete\", 1, 1, 1, 1, 1),\n    \"T2\": (\"Create and modify, no delete — Preview, Download, Create, Upload, Share, Rename, Move, Overwrite\", 1, 1, 1, 1, 0),\n    \"T3\": (\"Preview and download — Preview, Download\", 1, 1, 0, 0, 0),\n    \"T4\": (\"Preview only — Preview\", 1, 0, 0, 0, 0),\n}\ndef _tier_is_assignable(cursor, tier_code: str) -> bool:\n    if tier_code not in TIER_DEFINITIONS:\n        return False\n    cursor.execute(\"SELECT 1 FROM permission_tiers WHERE tier_code=%s AND enabled=1\", (tier_code,))",
+        "peekOfCode": "TIER_DEFINITIONS = {\n    \"T1\": (\"Full file access — Preview, Download, Create, Upload, Share, Rename, Move, Overwrite, Delete\", 1, 1, 1, 1, 1),\n    \"T2\": (\"Create and modify, no delete — Preview, Download, Create, Upload, Share, Rename, Move, Overwrite\", 1, 1, 1, 1, 0),\n    \"T3\": (\"Preview and download — Preview, Download\", 1, 1, 0, 0, 0),\n    \"T4\": (\"Preview only — Preview\", 1, 0, 0, 0, 0),\n}\ndef _tier_is_assignable(cursor, tier_code: str) -> bool:\n    cursor.execute(\"SELECT 1 FROM permission_tiers WHERE tier_code=%s AND enabled=1\", (tier_code,))\n    return cursor.fetchone() is not None\ndef _tier_rights_from_form() -> tuple[int, int, int, int, int]:",
         "detail": "flowvault.routes.management",
         "documentation": {}
     },
