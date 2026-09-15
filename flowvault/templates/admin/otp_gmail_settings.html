@@ -8,7 +8,7 @@
   <form method="post" class="mt-6 space-y-4">
     <label class="label cursor-pointer justify-start gap-2 rounded-lg border p-4"><input class="toggle toggle-primary" name="enabled" type="checkbox" {% if not settings or settings.enabled %}checked{% endif %}><span class="font-semibold">Enable Gmail OTP</span></label>
     <label class="fieldset"><span class="fieldset-legend">Gmail sender</span><input class="input input-bordered w-full" name="sender_email" type="email" value="{{ settings.sender_email if settings else '' }}" required></label>
-    <label class="fieldset"><span class="fieldset-legend">Gmail App Password</span><input class="input input-bordered w-full" name="app_password" type="password" required></label>
+    <label class="fieldset"><span class="fieldset-legend">Gmail App Password</span><input class="input input-bordered w-full" name="app_password" type="password" {% if not settings %}required{% endif %}><span class="mt-1 text-xs text-slate-500">เว้นว่างไว้เพื่อใช้รหัสเดิมเมื่อเพียงเปิด/ปิด OTP</span></label>
     <div class="grid grid-cols-2 gap-4"><label class="fieldset"><span class="fieldset-legend">SMTP host</span><input class="input input-bordered w-full" name="smtp_host" value="{{ settings.smtp_host if settings else 'smtp.gmail.com' }}" required></label><label class="fieldset"><span class="fieldset-legend">Port</span><input class="input input-bordered w-full" name="smtp_port" type="number" value="{{ settings.smtp_port if settings else 587 }}" required></label></div>
     <label class="label cursor-pointer justify-start gap-2"><input class="checkbox" name="use_tls" type="checkbox" {% if not settings or settings.use_tls %}checked{% endif %}>Use STARTTLS</label>
     <button class="btn btn-primary">บันทึกการตั้งค่า</button>

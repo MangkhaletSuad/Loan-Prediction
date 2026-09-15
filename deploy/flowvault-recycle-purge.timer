@@ -1,0 +1,10 @@
+[Unit]
+Description=Run FlowVault Recycle Bin purge every hour
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+Unit=flowvault-recycle-purge.service
+
+[Install]
+WantedBy=timers.target

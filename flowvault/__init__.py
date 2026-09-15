@@ -1,7 +1,10 @@
 import secrets
+import click
 from flask import Flask, request, session, abort
+from pymysql import MySQLError
 from datetime import datetime, timedelta, timezone
 from shutil import disk_usage
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from flowvault.config import Config
 
@@ -11,6 +14,9 @@ def create_app() -> Flask:
     if not Config.SECRET_KEY:
         raise RuntimeError("SECRET_KEY/FLASK_SECRET_KEY must be configured")
     app.config.from_object(Config)
+    if app.config["TRUSTED_PROXY_COUNT"]:
+        trusted_proxy_count = app.config["TRUSTED_PROXY_COUNT"]
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=trusted_proxy_count, x_proto=trusted_proxy_count, x_host=trusted_proxy_count)
     from flowvault.routes.auth import auth_bp
     from flowvault.routes.files import files_bp
     from flowvault.routes.management import management_bp
@@ -67,7 +73,19 @@ def create_app() -> Flask:
             from flowvault.audit import record_event
 
             endpoint = (request.endpoint or "unknown")[:60]
-            record_event(email, f"request_{request.method.lower()}", f"{endpoint} · {request.path} · HTTP {response.status_code}")
+            try:
+                record_event(email, f"request_{request.method.lower()}", f"{endpoint} · {request.path} · HTTP {response.status_code}")
+            except (MySQLError, OSError, TimeoutError):
+                # Auditing must not turn an otherwise successful user request into a 500.
+                app.logger.exception("Failed to record audit event for %s", endpoint)
         return response
+
+    @app.cli.command("purge-recycle-bin")
+    def purge_recycle_bin_command() -> None:
+        """Permanently remove recycle-bin entries whose 15-day retention has expired."""
+        from flowvault.routes.files import _purge_expired_recycle_items
+
+        _purge_expired_recycle_items()
+        click.echo("Expired recycle-bin items were purged.")
 
     return app

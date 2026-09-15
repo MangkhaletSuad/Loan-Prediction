@@ -17,13 +17,15 @@ def _fernet() -> Fernet:
     return Fernet(key)
 
 
-def get_gmail_settings() -> dict | None:
+def get_gmail_settings(include_password: bool = False) -> dict | None:
     with get_database_connection() as connection, connection.cursor() as cursor:
         cursor.execute("SELECT sender_email, smtp_host, smtp_port, use_tls, encrypted_app_password FROM otp_gmail_settings WHERE id = 1")
         settings = cursor.fetchone()
     if not settings:
         return None
-    settings["app_password"] = _fernet().decrypt(settings.pop("encrypted_app_password").encode()).decode()
+    if include_password:
+        settings["app_password"] = _fernet().decrypt(settings["encrypted_app_password"].encode()).decode()
+    settings.pop("encrypted_app_password", None)
     return settings
 
 
@@ -36,8 +38,19 @@ def is_otp_enabled() -> bool:
 
 
 def save_gmail_settings(sender_email: str, app_password: str, smtp_host: str, smtp_port: int, use_tls: bool, enabled: bool) -> None:
-    encrypted_password = _fernet().encrypt(app_password.encode()).decode()
+    """Save OTP delivery settings while allowing an administrator to keep the current password."""
+    if not 1 <= smtp_port <= 65535:
+        raise ValueError("SMTP port must be between 1 and 65535")
     with get_database_connection() as connection, connection.cursor() as cursor:
+        cursor.execute("SELECT encrypted_app_password FROM otp_gmail_settings WHERE id = 1")
+        existing = cursor.fetchone()
+        if not app_password and not existing:
+            raise ValueError("An SMTP app password is required for the first OTP setup")
+        encrypted_password = (
+            _fernet().encrypt(app_password.encode()).decode()
+            if app_password
+            else existing["encrypted_app_password"]
+        )
         cursor.execute("""INSERT INTO otp_gmail_settings (id, sender_email, encrypted_app_password, smtp_host, smtp_port, use_tls, enabled)
             VALUES (1, %s, %s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE sender_email=VALUES(sender_email), encrypted_app_password=VALUES(encrypted_app_password),
@@ -51,7 +64,7 @@ def create_otp() -> str:
 
 
 def send_otp(recipient: str, code: str) -> None:
-    settings = get_gmail_settings()
+    settings = get_gmail_settings(include_password=True)
     if not settings:
         raise RuntimeError("ผู้ดูแลระบบยังไม่ได้ตั้งค่า Gmail สำหรับ OTP")
     message = EmailMessage()

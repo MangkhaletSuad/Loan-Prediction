@@ -44,7 +44,27 @@ INSERT INTO `allowed_file_types` (`id`, `extension`, `enabled`, `created_at`) VA
 (2, 'xlsx', 1, '2026-09-07 08:34:34'),
 (3, 'jpg', 1, '2026-09-07 08:34:34'),
 (4, 'png', 1, '2026-09-07 08:34:34'),
-(5, 'pdf', 1, '2026-09-07 10:06:22');
+(5, 'pdf', 1, '2026-09-07 10:06:22'),
+(6, 'zip', 1, '2026-09-14 00:00:00'),
+(7, 'csv', 1, '2026-09-14 00:00:00'),
+(8, 'rar', 1, '2026-09-14 00:00:00'),
+(9, 'xls', 1, '2026-09-14 00:00:00'),
+(10, 'txt', 1, '2026-09-14 00:00:00'),
+(11, 'dwg', 1, '2026-09-14 00:00:00'),
+(12, 'dwf', 1, '2026-09-14 00:00:00'),
+(13, 'rvt', 1, '2026-09-14 00:00:00'),
+(14, 'rte', 1, '2026-09-14 00:00:00'),
+(15, 'rfa', 1, '2026-09-14 00:00:00'),
+(16, 'ifc', 1, '2026-09-14 00:00:00'),
+(17, 'nwd', 1, '2026-09-14 00:00:00'),
+(18, 'nwf', 1, '2026-09-14 00:00:00'),
+(19, 'skp', 1, '2026-09-14 00:00:00'),
+(20, 'drs', 1, '2026-09-14 00:00:00'),
+(21, 'ies', 1, '2026-09-14 00:00:00'),
+(22, 'hdri', 1, '2026-09-14 00:00:00'),
+(23, 'bmp', 1, '2026-09-14 00:00:00'),
+(24, 'dds', 1, '2026-09-14 00:00:00'),
+(25, 'exr', 1, '2026-09-14 00:00:00');
 
 -- --------------------------------------------------------
 
@@ -206,8 +226,14 @@ CREATE TABLE `departments` (
 --
 
 INSERT INTO `departments` (`id`, `name`, `created_at`) VALUES
-(1, 'General', '2026-09-07 08:34:34'),
-(2, 'IT', '2026-09-07 10:23:28');
+(3, 'ฝ่ายผลิตภัณฑ์ Trendy', '2026-09-14 00:00:00'),
+(4, 'ฝ่ายผลิตภัณฑ์ Landy', '2026-09-14 00:00:00'),
+(5, 'ฝ่ายผลิตภัณฑ์ Landy Grand', '2026-09-14 00:00:00'),
+(6, 'ฝ่ายขาย', '2026-09-14 00:00:00'),
+(7, 'ฝ่ายเขียนแบบและประมาณราคา', '2026-09-14 00:00:00'),
+(8, 'ฝ่ายวิศวกรรม', '2026-09-14 00:00:00'),
+(9, 'ฝ่ายก่อสร้าง', '2026-09-14 00:00:00'),
+(10, 'ฝ่ายจัดหา', '2026-09-14 00:00:00');
 
 -- --------------------------------------------------------
 
@@ -277,6 +303,23 @@ INSERT INTO `folders` (`id`, `owner_id`, `parent_id`, `name`, `created_at`) VALU
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `recycle_bin_items`
+--
+
+CREATE TABLE `recycle_bin_items` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `item_type` varchar(10) NOT NULL,
+  `storage_root` varchar(1024) NOT NULL,
+  `original_path` varchar(1024) NOT NULL,
+  `trash_token` char(32) NOT NULL,
+  `deleted_by` varchar(254) NOT NULL,
+  `deleted_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `expires_at` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `otp_gmail_settings`
 --
 
@@ -308,9 +351,11 @@ CREATE TABLE `permission_tiers` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `tier_code` varchar(30) NOT NULL,
   `description` varchar(255) NOT NULL,
-  `can_upload` tinyint(1) NOT NULL DEFAULT 0,
-  `can_manage` tinyint(1) NOT NULL DEFAULT 0,
-  `can_share` tinyint(1) NOT NULL DEFAULT 0,
+  `can_preview` tinyint(1) NOT NULL DEFAULT 0,
+  `can_download` tinyint(1) NOT NULL DEFAULT 0,
+  `can_create` tinyint(1) NOT NULL DEFAULT 0,
+  `can_modify` tinyint(1) NOT NULL DEFAULT 0,
+  `can_delete` tinyint(1) NOT NULL DEFAULT 0,
   `enabled` tinyint(1) NOT NULL DEFAULT 1,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -319,10 +364,11 @@ CREATE TABLE `permission_tiers` (
 -- Dumping data for table `permission_tiers`
 --
 
-INSERT INTO `permission_tiers` (`id`, `tier_code`, `description`, `can_upload`, `can_manage`, `can_share`, `enabled`, `created_at`) VALUES
-(1, 'T1', 'View and download only', 1, 1, 1, 1, '2026-09-07 10:00:32'),
-(2, 'T2', 'View, download and upload', 1, 0, 0, 1, '2026-09-07 10:00:32'),
-(3, 'T3', 'Full file management', 1, 1, 1, 1, '2026-09-07 10:00:32');
+INSERT INTO `permission_tiers` (`id`, `tier_code`, `description`, `can_preview`, `can_download`, `can_create`, `can_modify`, `can_delete`, `enabled`, `created_at`) VALUES
+(1, 'T1', 'R, C, N, M, D — Full file access', 1, 1, 1, 1, 1, 1, '2026-09-07 10:00:32'),
+(2, 'T2', 'R, C, N, M — Create and modify, no delete', 1, 1, 1, 1, 0, 1, '2026-09-07 10:00:32'),
+(3, 'T3', 'R, C — Preview and download', 1, 1, 0, 0, 0, 1, '2026-09-07 10:00:32'),
+(4, 'T4', 'R — Preview only', 1, 0, 0, 0, 0, 1, '2026-09-07 10:00:32');
 
 -- --------------------------------------------------------
 
@@ -413,6 +459,14 @@ ALTER TABLE `otp_gmail_settings`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `recycle_bin_items`
+--
+ALTER TABLE `recycle_bin_items`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `trash_token` (`trash_token`),
+  ADD KEY `idx_recycle_bin_scope_expiry` (`storage_root`(255),`expires_at`);
+
+--
 -- Indexes for table `permission_tiers`
 --
 ALTER TABLE `permission_tiers`
@@ -434,7 +488,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `allowed_file_types`
 --
 ALTER TABLE `allowed_file_types`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
 -- AUTO_INCREMENT for table `audit_logs`
@@ -476,7 +530,13 @@ ALTER TABLE `folders`
 -- AUTO_INCREMENT for table `permission_tiers`
 --
 ALTER TABLE `permission_tiers`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `recycle_bin_items`
+--
+ALTER TABLE `recycle_bin_items`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `users`

@@ -1,0 +1,19 @@
+[Unit]
+Description=FlowVault Flask application
+After=network.target docker.service
+Wants=network.target
+
+[Service]
+Type=simple
+User=flowvault
+Group=flowvault
+WorkingDirectory=/opt/flowvault
+Environment=PATH=/opt/flowvault/.venv/bin
+ExecStart=/opt/flowvault/.venv/bin/gunicorn --workers 2 --threads 4 --bind 127.0.0.1:8000 app:app
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

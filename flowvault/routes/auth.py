@@ -86,7 +86,7 @@ def login():
             else:
                 session.clear()
                 now = datetime.now(timezone.utc)
-                session.update(pending_user_id=user["id"], pending_email=user["email"], pending_role=user["role"], pending_department=user["department"], otp_hash=sha256(code.encode()).hexdigest(), otp_expires=(now + timedelta(seconds=current_app.config["OTP_TTL_SECONDS"])).timestamp(), otp_sent_at=now.timestamp())
+                session.update(pending_user_id=user["id"], pending_email=user["email"], pending_role=user["role"], pending_department=user["department"], otp_hash=sha256(code.encode()).hexdigest(), otp_expires=(now + timedelta(seconds=current_app.config["OTP_TTL_SECONDS"])).timestamp(), otp_sent_at=now.timestamp(), otp_failures=0)
                 return redirect(url_for("auth.verify_otp"))
     return render_template("auth/login.html")
 
@@ -96,6 +96,11 @@ def verify_otp():
     if "pending_user_id" not in session:
         return redirect(url_for("auth.login"))
     if request.method == "POST":
+        if session.get("otp_failures", 0) >= current_app.config["OTP_FAILURE_LIMIT"]:
+            record_event(session["pending_email"], "otp_verification_locked")
+            session.clear()
+            flash("ลองกรอก OTP ผิดหลายครั้งเกินไป กรุณาเข้าสู่ระบบใหม่")
+            return redirect(url_for("auth.login"))
         valid = datetime.now(timezone.utc).timestamp() <= session["otp_expires"] and compare_digest(sha256(request.form.get("otp", "").strip().encode()).hexdigest(), session["otp_hash"])
         if valid:
             email = session["pending_email"]
@@ -110,7 +115,12 @@ def verify_otp():
             session["user_department"] = department
             record_event(email, "login_completed")
             return redirect(url_for("files.my_files"))
+        session["otp_failures"] = session.get("otp_failures", 0) + 1
         record_event(session["pending_email"], "otp_verification_failed")
+        if session["otp_failures"] >= current_app.config["OTP_FAILURE_LIMIT"]:
+            session.clear()
+            flash("ลองกรอก OTP ผิดครบจำนวนที่กำหนด กรุณาเข้าสู่ระบบใหม่")
+            return redirect(url_for("auth.login"))
         flash("OTP ไม่ถูกต้องหรือหมดอายุ")
     return render_template("auth/verify_otp.html", email=session["pending_email"])
 
@@ -144,7 +154,18 @@ def otp_gmail_settings():
     if _current_role() != "super_admin" and not is_bootstrap_admin:
         return redirect(url_for("auth.login"))
     if request.method == "POST":
-        save_gmail_settings(request.form["sender_email"].strip(), request.form["app_password"], request.form.get("smtp_host", "smtp.gmail.com"), int(request.form.get("smtp_port", 587)), request.form.get("use_tls") == "on", request.form.get("enabled") == "on")
+        try:
+            save_gmail_settings(
+                request.form["sender_email"].strip(),
+                request.form.get("app_password", ""),
+                request.form.get("smtp_host", "smtp.gmail.com").strip(),
+                int(request.form.get("smtp_port", 587)),
+                request.form.get("use_tls") == "on",
+                request.form.get("enabled") == "on",
+            )
+        except (ValueError, TypeError):
+            flash("ข้อมูล SMTP ไม่ถูกต้อง กรุณาตรวจสอบอีเมล รหัสผ่าน และพอร์ต")
+            return redirect(url_for("auth.otp_gmail_settings"))
         if session.get("user_email"):
             record_event(session["user_email"], "otp_gmail_settings_updated")
         flash("บันทึกการตั้งค่า OTP Gmail แล้ว")

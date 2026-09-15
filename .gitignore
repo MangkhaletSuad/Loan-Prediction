@@ -1,3 +1,10 @@
 .venv/
 __pycache__/
 *.py[cod]
+.env
+.flask.stdout.log
+.flask.stderr.log
+.flowvault-recycle-bin/
+storage/
+data/
+recycle-bin/

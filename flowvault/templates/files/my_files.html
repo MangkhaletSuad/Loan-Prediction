@@ -5,12 +5,12 @@
   .folder-panel { width: 256px; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; box-shadow: 0 8px 24px rgb(15 23 42 / 6%); }
   .folder-panel-head { display: flex; align-items: center; justify-content: space-between; padding: 0 0 10px; border-bottom: 1px solid #e2e8f0; }
   .folder-panel-head button { width: 27px; height: 27px; border: 1px solid #dbe4f0; border-radius: 8px; color: #2563eb; background: #fff; font-size: 18px; line-height: 1; }
-  .folder-tree { margin-top: 15px; color: #64748b; font-size: 13px; }
-  .folder-tree-title { margin: 0 0 7px 8px; color: #94a3b8; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-  .directory-node { margin: 0; } .directory-node summary { list-style: none; } .directory-node summary::-webkit-details-marker { display: none; }
-  .directory-summary { position: relative; display: flex; align-items: center; min-height: 29px; cursor: pointer; } .tree-branch { width: 17px; text-align: center; } details.directory-node > .directory-summary > .tree-branch::after { content: '›'; display: inline-block; transition: transform .15s; } details.directory-node[open] > .directory-summary > .tree-branch::after { transform: rotate(90deg); }
-  .folder-tree-link { display: flex; min-width: 0; align-items: center; gap: 7px; color: inherit; text-decoration: none; } .folder-tree-link:hover { color: #2563eb; } .tree-icon { display: flex; color: #1677ff; } .tree-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .directory-children { margin-left: 8px; padding-left: 7px; border-left: 1px solid #bfdbfe; } .directory-children > .directory-node > .directory-summary::before { position: absolute; top: 50%; left: -15px; width: 15px; border-top: 1px solid #bfdbfe; content: ''; }
+  .folder-tree { margin-top: 15px; color: #374151; font-family: Tahoma, "Noto Sans Thai", sans-serif; font-size: 13px; }
+  .folder-tree-title { margin: 0 0 7px 8px; color: #94a3b8; font-family: "Noto Sans Thai", sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .directory-node { position: relative; margin: 0; } .directory-node summary { list-style: none; } .directory-node summary::-webkit-details-marker { display: none; }
+  .directory-summary { position: relative; display: flex; align-items: center; min-height: 24px; cursor: pointer; } .tree-branch { position: relative; z-index: 1; display: inline-flex; width: 19px; flex: 0 0 19px; align-items: center; justify-content: center; background: #fff; } details.directory-node > .directory-summary > .tree-branch::after { box-sizing: border-box; width: 11px; height: 11px; border: 1px solid #8e8e8e; background: #fff; color: #444; content: '−'; font-family: Arial, sans-serif; font-size: 11px; line-height: 8px; text-align: center; } details.directory-node:not([open]) > .directory-summary > .tree-branch::after { content: '+'; }
+  .folder-tree-link { display: flex; min-width: 0; align-items: center; gap: 5px; color: inherit; text-decoration: none; } .folder-tree-link:hover { color: #2563eb; } .tree-icon { display: flex; color: #d69e00; } .tree-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .directory-children { margin-left: 9px; padding-left: 10px; } .directory-children > .directory-node::before { position: absolute; top: 12px; left: -10px; width: 10px; border-top: 1px solid #aeb6bf; content: ''; } .directory-children > .directory-node::after { position: absolute; top: 0; bottom: 0; left: -10px; border-left: 1px solid #aeb6bf; content: ''; } .directory-children > .directory-node:last-child::after { bottom: calc(100% - 12px); }
   .top-actions { display: inline-flex; align-items: center; overflow: hidden; border: 1px solid #dbe4f0; border-radius: 8px; background: #fff; }
   .top-actions button { display: grid; width: 37px; height: 34px; place-items: center; color: #52657a; background: transparent; border: 0; cursor: pointer; }
   .top-actions button:hover { background: #f1f5f9; color: #2563eb; } .top-actions button:focus-visible { outline: 2px solid #3b82f6; outline-offset: -2px; }
@@ -28,9 +28,9 @@
     </div>
     <nav class="mt-12 text-sm font-semibold">
       <p class="sidebar-label px-2 text-[10px] font-bold tracking-wider text-slate-500">WORKSPACE</p>
-      <a title="My files" class="mt-3 flex items-center gap-3 rounded-lg px-3 py-3 bg-[#2a4054] text-white" href="{{ url_for('files.my_files') }}"><span class="sidebar-icon">▣</span><span class="sidebar-label">My files</span></a>
+      <a class="flex min-w-0 flex-1 items-center rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" href="{{ url_for('files.my_files') }}" aria-label="My files">My files</a>
       <a title="Shared with me" class="mt-1 flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-slate-800" href="{{ url_for('management.shared_with_me') }}"><span class="sidebar-icon">♧</span><span class="sidebar-label">Shared with me</span></a>
-      <p class="sidebar-label mt-6 px-2 text-[10px] font-bold tracking-wider text-slate-500">ADMINISTRATION</p>
+      {% if is_department_admin or is_super_admin %}<p class="sidebar-label mt-6 px-2 text-[10px] font-bold tracking-wider text-slate-500">ADMINISTRATION</p>{% endif %}
       {% if is_department_admin or is_super_admin %}<a title="Users & permissions" class="mt-3 flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-slate-800" href="{{ url_for('management.users_permissions') }}"><span class="sidebar-icon">♟</span><span class="sidebar-label">Users &amp; permissions</span></a>{% endif %}
       {% if is_department_admin or is_super_admin %}<a title="Download usage" class="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-slate-800" href="{{ url_for('management.usage', kind='download') }}"><span class="sidebar-icon">▥</span><span class="sidebar-label">Download usage</span></a><a title="Upload usage" class="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-slate-800" href="{{ url_for('management.usage', kind='upload') }}"><span class="sidebar-icon">⇧</span><span class="sidebar-label">Upload usage</span></a><a title="Upload file types" class="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-slate-800" href="{{ url_for('management.file_types') }}"><span class="sidebar-icon">⇧</span><span class="sidebar-label">Upload file types</span></a>{% endif %}
       {% if is_super_admin %}<a title="Departments" class="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-slate-800" href="{{ url_for('management.departments') }}"><span class="sidebar-icon">⌘</span><span class="sidebar-label">Departments</span></a><a title="Permission Tiers" class="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-slate-800" href="{{ url_for('management.permission_tiers') }}"><span class="sidebar-icon">▦</span><span class="sidebar-label">Permission Tiers</span></a><a title="Logs" class="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-slate-800" href="{{ url_for('auth.admin_logs') }}"><span>▤</span><span>Logs</span></a><a title="OTP Gmail Settings" class="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-slate-800" href="{{ url_for('auth.otp_gmail_settings') }}"><span>✉</span><span>OTP Gmail Settings</span></a>{% endif %}
@@ -43,13 +43,14 @@
   </aside>
   <div id="sidebar-backdrop" class="fixed inset-0 z-40 hidden bg-slate-950/40 backdrop-blur-[1px]"></div>
   <div class="min-w-0">
-    <header class="border-b border-slate-200 bg-white/70 px-4 py-3 backdrop-blur md:px-7"><div class="flex items-center gap-4"><button id="header-sidebar-toggle" class="btn btn-square btn-ghost btn-sm hidden lg:inline-flex" aria-label="เปิดเมนู" aria-expanded="false">☰</button><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-xl font-bold lg:hidden">F</div><div class="hidden min-w-48 sm:block"><p class="text-xs text-slate-400">{{ today }}</p><h1 class="text-2xl font-bold leading-tight">My files</h1></div><input class="input input-bordered h-10 min-w-0 flex-1 bg-white" placeholder="My files" aria-label="Current folder"><span class="badge badge-primary badge-outline hidden sm:inline-flex">{{ user_email }}</span><form action="{{ url_for('auth.logout') }}" method="post"><button class="btn btn-error btn-sm text-white">ออกจากระบบ</button></form></div></header>
+    <header class="border-b border-slate-200 bg-white/70 px-4 py-3 backdrop-blur md:px-7"><div class="flex items-center gap-4"><button id="header-sidebar-toggle" class="btn btn-square btn-ghost btn-sm hidden lg:inline-flex" aria-label="เปิดเมนู" aria-expanded="false">☰</button><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-xl font-bold lg:hidden">F</div><div class="hidden min-w-48 sm:block"><p class="text-xs text-slate-400">{{ today }}</p><h1 class="text-2xl font-bold leading-tight">My files</h1></div><a class="flex min-w-0 flex-1 items-center rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" href="{{ url_for('files.my_files') }}" aria-label="My files">My files</a><span class="badge badge-primary badge-outline hidden sm:inline-flex">{{ user_email }}</span><form action="{{ url_for('auth.logout') }}" method="post"><button class="btn btn-error btn-sm text-white">ออกจากระบบ</button></form></div></header>
     <main class="flex gap-6 p-4 md:p-7">
       <nav class="folder-panel hidden h-fit shrink-0 lg:block" aria-label="Folders">
         {% macro disk_folder(node) -%}{% if node.children %}<details class="directory-node" open><summary class="directory-summary"><span class="tree-branch" aria-hidden="true"></span><a class="folder-tree-link" href="{{ url_for('files.my_files', folder=node.relative_path) }}" title="{{ node.name }}"><span class="tree-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M3 5.5A2.5 2.5 0 0 1 5.5 3H10l2 2h6.5A2.5 2.5 0 0 1 21 7.5v9A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-11Z"/></svg></span><span class="tree-name">{{ node.name }}</span></a></summary><div class="directory-children">{% for child in node.children %}{{ disk_folder(child) }}{% endfor %}</div></details>{% else %}<div class="directory-node"><div class="directory-summary"><span class="tree-branch" aria-hidden="true"></span><a class="folder-tree-link" href="{{ url_for('files.my_files', folder=node.relative_path) }}" title="{{ node.name }}"><span class="tree-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M3 5.5A2.5 2.5 0 0 1 5.5 3H10l2 2h6.5A2.5 2.5 0 0 1 21 7.5v9A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-11Z"/></svg></span><span class="tree-name">{{ node.name }}</span></a></div></div>{% endif %}{%- endmacro %}
         {% macro folder_link(id, name) -%}<a class="folder-tree-link" href="{{ url_for('files.my_files', folder=id) }}" title="{{ name }}"><span class="tree-icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M3 5.5A2.5 2.5 0 0 1 5.5 3H10l2 2h6.5A2.5 2.5 0 0 1 21 7.5v9A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-11Z"/></svg></span><span class="tree-name">{{ name }}</span></a>{%- endmacro %}
-        <div class="folder-panel-head"><strong>Folders</strong><button type="button" title="New folder" onclick="document.getElementById('folder-modal').showModal()">+</button></div>
+        <div class="folder-panel-head"><strong>Folders</strong><button type="button" title="New folder" {% if not permissions.can_create %}disabled{% endif %} onclick="document.getElementById('folder-modal').showModal()">+</button></div>
         <div class="folder-tree"><div class="folder-tree-title">My folders</div>{% for folder in folder_tree %}{{ disk_folder(folder) }}{% else %}<p class="px-2 py-4 text-sm text-slate-400">ยังไม่มีโฟลเดอร์ใน storage</p>{% endfor %}</div>
+        {% if can_restore %}<a class="btn btn-outline btn-sm mt-4 w-full" href="{{ url_for('files.recycle_bin') }}">♻ Recycle Bin</a>{% endif %}
         {% if false %}<div class="folder-tree"><div class="folder-tree-title">My folders</div>
           <details class="directory-node" open><summary class="directory-summary"><span class="tree-branch" aria-hidden="true"></span>{{ folder_link(1, '(1) มาตรฐาน') }}</summary><div class="directory-children">
             <details class="directory-node" open><summary class="directory-summary"><span class="tree-branch" aria-hidden="true"></span>{{ folder_link(3, '(1.1) หนังสือเวียน') }}</summary><div class="directory-children">
@@ -71,7 +72,8 @@
     </main>
   </div>
   <script id="folder-browser-data" type="application/json">{{ browser|tojson }}</script>
-  <dialog id="folder-modal" class="modal"><div class="modal-box"><h3 class="text-lg font-bold">New folder</h3><label class="fieldset mt-4"><span class="fieldset-legend">Folder name</span><input class="input input-bordered w-full" placeholder="e.g. Project files" autofocus></label><div class="modal-action"><form method="dialog"><button class="btn">Cancel</button><button class="btn btn-primary ml-2" value="create">Create folder</button></form></div></div><form method="dialog" class="modal-backdrop"><button aria-label="Close">close</button></form></dialog>
+  <dialog id="folder-modal" class="modal"><div class="modal-box"><h3 class="text-lg font-bold">New folder</h3><form action="{{ url_for('files.create_folder') }}" method="post" class="mt-4"><input type="hidden" name="folder" value="{{ browser.relative_path }}"><label class="fieldset"><span class="fieldset-legend">Folder name</span><input class="input input-bordered w-full" name="name" placeholder="e.g. Project files" maxlength="255" required autofocus></label><div class="modal-action"><button type="button" class="btn" onclick="folder_modal.close()">Cancel</button><button class="btn btn-primary">Create folder</button></div></form></div><form method="dialog" class="modal-backdrop"><button aria-label="Close">close</button></form></dialog>
+  <dialog id="upload-modal" class="modal"><div class="modal-box"><h3 class="text-lg font-bold">Upload file</h3><form action="{{ url_for('files.upload_file') }}" method="post" enctype="multipart/form-data" class="mt-4"><input type="hidden" name="folder" value="{{ browser.relative_path }}"><label class="fieldset"><span class="fieldset-legend">File</span><input class="file-input file-input-bordered w-full" name="file" type="file" required></label>{% if permissions.can_modify %}<label class="mt-3 flex items-center gap-2 text-sm"><input class="checkbox checkbox-primary checkbox-sm" name="overwrite" type="checkbox">บันทึกทับเมื่อมีไฟล์ชื่อเดิม</label>{% endif %}<p class="mt-2 text-xs text-slate-500">ขนาดสูงสุด 64 MB และต้องเป็นประเภทไฟล์ที่ผู้ดูแลอนุญาต</p><div class="modal-action"><button type="button" class="btn" onclick="upload_modal.close()">Cancel</button><button class="btn btn-primary">Upload</button></div></form></div><form method="dialog" class="modal-backdrop"><button aria-label="Close">close</button></form></dialog>
 </div>
 {% endblock %}
 {% block scripts %}
@@ -98,12 +100,33 @@
   closeToggle?.addEventListener('click', closeSidebar);
   backdrop?.addEventListener('click', closeSidebar);
   document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeSidebar(); });
-  const selectedAction = (action) => console.info(`${action}: select a file or folder first.`);
   const selectedFiles = new Set();
-  function selectedInfo() { selectedAction('Activity log'); }
+  const selectedFolders = new Set();
+  const selectedCount = () => selectedFiles.size + selectedFolders.size;
+  const selectedAction = (action) => Swal.fire({ icon: 'info', title: 'ยังไม่ได้เลือกรายการ', text: `${action}: ดับเบิลคลิกที่ไฟล์หรือโฟลเดอร์ก่อน` });
+  const selectionHint = document.querySelector('main .mt-8 span');
+  if (selectionHint) selectionHint.textContent = 'ดับเบิลคลิกที่ไฟล์หรือโฟลเดอร์เพื่อเลือกอีกครั้งเพื่อยกเลิกเลือก';
+  const newFolderButton = document.querySelector('.top-actions')?.nextElementSibling;
+  const uploadButton = newFolderButton?.nextElementSibling;
+  {% if permissions.can_create %}uploadButton?.addEventListener('click', () => document.querySelector('#upload-modal').showModal());{% else %}if (uploadButton) { uploadButton.disabled = true; uploadButton.title = 'คุณไม่มีสิทธิ์สร้างไฟล์ใหม่'; }{% endif %}
+  {% if permissions.can_create %}newFolderButton?.addEventListener('click', () => document.querySelector('#folder-modal').showModal());{% else %}if (newFolderButton) { newFolderButton.disabled = true; newFolderButton.title = 'คุณไม่มีสิทธิ์สร้างโฟลเดอร์'; }{% endif %}
+  const actionButton = (title) => [...document.querySelectorAll('button')].find((button) => button.title === title);
+  {% if not permissions.can_create %}if (actionButton('Share')) { actionButton('Share').disabled = true; actionButton('Share').title = 'คุณไม่มีสิทธิ์แชร์ไฟล์'; }{% endif %}
+  {% if not permissions.can_modify %}['Rename', 'Move'].forEach((title) => { const button = actionButton(title); if (button) { button.disabled = true; button.title = 'คุณไม่มีสิทธิ์แก้ไขไฟล์'; } });{% endif %}
+  {% if not permissions.can_delete %}if (actionButton('Delete')) { actionButton('Delete').disabled = true; actionButton('Delete').title = 'คุณไม่มีสิทธิ์ลบไฟล์'; }{% endif %}
+  {% if not permissions.can_download %}if (actionButton('Download')) { actionButton('Download').disabled = true; actionButton('Download').title = 'คุณไม่มีสิทธิ์ดาวน์โหลดไฟล์'; }{% endif %}
+  function selectedInfo() {
+    if (!selectedCount()) return selectedAction('Info');
+    const items = [
+      ...browser.folders.filter((folder) => selectedFolders.has(folder.relative_path)).map((folder) => ({ ...folder, type: 'Folder' })),
+      ...browser.files.filter((file) => selectedFiles.has(file.relative_path)).map((file) => ({ ...file, type: 'File' })),
+    ];
+    const details = items.map((item) => `<div class="border-b border-slate-100 py-2 text-left last:border-0"><strong>${escapeHtml(item.name)}</strong><p class="text-xs text-slate-500">${item.type} · ${escapeHtml(item.size)} · ${escapeHtml(item.created_at)}</p><p class="break-all text-xs text-slate-400">${escapeHtml(item.relative_path)}</p></div>`).join('');
+    Swal.fire({ title: `ข้อมูล ${items.length} รายการ`, html: details, width: 'min(34rem, calc(100vw - 2rem))' });
+  }
   async function selectedShare() {
-    if (!selectedFiles.size) {
-      await Swal.fire({ icon: 'info', title: 'เลือกไฟล์ก่อนแชร์', text: 'เลือกไฟล์อย่างน้อย 1 รายการ หรือใช้ปุ่มเลือกไฟล์ทั้งหมด' });
+    if (!selectedCount()) {
+      await selectedAction('Share');
       return;
     }
     const { value, isConfirmed } = await Swal.fire({
@@ -127,7 +150,7 @@
       didOpen: () => {
         const popup = Swal.getPopup();
         const fileInput = popup.querySelector('#share-file-path');
-        fileInput.value = `เลือกแล้ว ${selectedFiles.size} ไฟล์`;
+        fileInput.value = `เลือกแล้ว ${selectedFiles.size} ไฟล์, ${selectedFolders.size} โฟลเดอร์`;
         fileInput.readOnly = true;
         const input = popup.querySelector('#share-recipient-emails');
         const suggestions = popup.querySelector('#share-recipient-suggestions');
@@ -184,6 +207,7 @@
     const form = new FormData();
     form.append('csrf_token', {{ csrf_token|tojson }});
     selectedFiles.forEach((path) => form.append('file_paths', path));
+    selectedFolders.forEach((path) => form.append('folder_paths', path));
     form.append('recipient_emails', value.recipients.join(','));
     form.append('permission', value.permission);
     form.append('expires_in_days', value.expiresInDays);
@@ -195,30 +219,99 @@
       await Swal.fire({ icon: 'error', title: 'ไม่สามารถแชร์ไฟล์ได้', text: 'กรุณาลองใหม่อีกครั้ง' });
     }
   }
-  function selectedRename() { selectedAction('Rename'); }
-  function selectedMove() { selectedAction('Move'); }
-  function selectedDownload() { selectedAction('Download'); }
-  function selectedDelete() { selectedAction('Delete'); }
-
-  const toolbarSelects = document.querySelectorAll('main select');
-  const sortField = toolbarSelects[0];
-  const sortDirection = toolbarSelects[1];
-  const fileFilter = toolbarSelects[2];
-  if (sortDirection) {
-    sortDirection.options[0].value = 'descending';
-    sortDirection.insertAdjacentHTML('beforeend', '<option value="ascending">Ascending</option>');
+  const selectedFilePaths = () => [...selectedFiles];
+  const selectedFolderPaths = () => [...selectedFolders];
+  async function submitSelectedFiles(url, extra = {}, reload = true) {
+    const form = new FormData();
+    form.append('csrf_token', {{ csrf_token|tojson }});
+    selectedFilePaths().forEach((path) => form.append('file_paths', path));
+    Object.entries(extra).forEach(([key, value]) => form.append(key, value));
+    const response = await fetch(url, { method: 'POST', body: form });
+    if (!response.ok) throw new Error('File operation failed');
+    if (reload) window.location.reload();
   }
-  if (fileFilter) {
-    fileFilter.options[0].value = 'all';
-    fileFilter.insertAdjacentHTML('beforeend', '<option value="folders">Folders</option><option value="images">Images</option><option value="documents">Documents</option><option value="other">Other files</option>');
+  async function selectedRename() {
+    if (selectedCount() !== 1) return selectedAction('Rename: เลือกได้ครั้งละ 1 รายการ');
+    const isFolder = selectedFolders.size === 1;
+    const path = isFolder ? selectedFolderPaths()[0] : selectedFilePaths()[0];
+    const currentName = path.split('/').pop();
+    const result = await Swal.fire({ title: `เปลี่ยนชื่อ${isFolder ? 'โฟลเดอร์' : 'ไฟล์'}`, input: 'text', inputValue: currentName, inputLabel: 'ชื่อใหม่', inputValidator: (value) => !value.trim() && 'กรุณาระบุชื่อใหม่' });
+    if (!result.isConfirmed) return;
+    try { await submitSelectedFiles(isFolder ? '{{ url_for("files.rename_folder") }}' : '{{ url_for("files.rename_file") }}', isFolder ? { new_name: result.value.trim(), folder_path: path } : { new_name: result.value.trim(), file_path: path }); }
+    catch { await Swal.fire({ icon: 'error', title: `ไม่สามารถเปลี่ยนชื่อ${isFolder ? 'โฟลเดอร์' : 'ไฟล์'}ได้` }); }
+  }
+  async function selectedMove() {
+    if (!selectedFiles.size) return selectedAction('Move');
+    const result = await Swal.fire({ title: 'ย้ายไฟล์', input: 'text', inputLabel: 'โฟลเดอร์ปลายทาง (relative path)', inputPlaceholder: 'เช่น (1) มาตรฐาน/แบบบ้าน', inputValidator: (value) => value.trim() === '' && 'กรุณาระบุโฟลเดอร์ปลายทาง' });
+    if (!result.isConfirmed) return;
+    try { await submitSelectedFiles('{{ url_for("files.move_files") }}', { destination_folder: result.value.trim() }); }
+    catch { await Swal.fire({ icon: 'error', title: 'ไม่สามารถย้ายไฟล์ได้' }); }
+  }
+  function selectedDownload() {
+    if (selectedCount() !== 1) return selectedAction('Download: เลือกได้ครั้งละ 1 รายการ');
+    const path = selectedFolders.size ? selectedFolderPaths()[0] : selectedFilePaths()[0];
+    window.location.assign(`{{ url_for('files.download_file') }}?file=${encodeURIComponent(path)}`);
+  }
+  async function selectedDelete() {
+    if (!selectedCount()) return selectedAction('Delete');
+    const result = await Swal.fire({ icon: 'warning', title: `ลบ ${selectedCount()} รายการ?`, text: 'รายการจะถูกย้ายไป Recycle Bin และกู้คืนได้ภายใน 15 วัน', showCancelButton: true, confirmButtonText: 'ลบ', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#dc2626' });
+    if (!result.isConfirmed) return;
+    try {
+      if (selectedFiles.size) await submitSelectedFiles('{{ url_for("files.delete_files") }}', {}, false);
+      for (const path of selectedFolderPaths()) await submitFolderDelete(path);
+      window.location.reload();
+    } catch { await Swal.fire({ icon: 'error', title: 'ไม่สามารถย้ายบางรายการไป Recycle Bin ได้' }); }
+  }
+  async function submitFolderDelete(folderPath) {
+    const form = new FormData();
+    form.append('csrf_token', {{ csrf_token|tojson }});
+    form.append('folder_path', folderPath);
+    const response = await fetch('{{ url_for("files.delete_folder") }}', { method: 'POST', body: form });
+    if (!response.ok) throw new Error('Folder delete failed');
+  }
+  async function deleteFolder(folderPath) {
+    const result = await Swal.fire({ icon: 'warning', title: 'ลบโฟลเดอร์?', text: 'ไฟล์และโฟลเดอร์ย่อยทั้งหมดจะถูกลบและไม่สามารถย้อนกลับได้', showCancelButton: true, confirmButtonText: 'ลบโฟลเดอร์', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#dc2626' });
+    if (!result.isConfirmed) return;
+    try {
+      await submitFolderDelete(folderPath);
+      window.location.reload();
+    } catch {
+      await Swal.fire({ icon: 'error', title: 'ไม่สามารถลบโฟลเดอร์ได้' });
+    }
+  }
+
+  const fileToolbar = document.querySelector('.top-actions')?.parentElement;
+  const [sortField, sortDirection, fileFilter] = Array.from(fileToolbar?.querySelectorAll('select') || []);
+  if (sortField && sortDirection && fileFilter) {
+    sortField.setAttribute('aria-label', 'Sort by Name, Date, Size, or Type');
+    sortDirection.setAttribute('aria-label', 'Sort direction');
+    fileFilter.setAttribute('aria-label', 'Filter files');
+    sortField.replaceChildren(
+      new Option('Name', 'name', true, true),
+      new Option('Date', 'date'),
+      new Option('Size', 'size'),
+      new Option('Type', 'type'),
+    );
+    sortDirection.replaceChildren(
+      new Option('Ascending', 'ascending', true, true),
+      new Option('Descending', 'descending'),
+    );
+    fileFilter.replaceChildren(
+      new Option('All files', 'all', true, true),
+      new Option('Folders', 'folders'),
+      new Option('Images', 'images'),
+      new Option('Documents', 'documents'),
+      new Option('Other files', 'other'),
+    );
   }
 
   const browser = JSON.parse(document.querySelector('#folder-browser-data').textContent);
   const searchInput = document.querySelector('main input[placeholder="Search files or folders"]');
   const searchButton = searchInput?.nextElementSibling;
   const selectAllButton = document.querySelector('main .btn-outline.btn-xs');
-  const isPreviewable = (file) => /\.(pdf|png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name);
-  const isImage = (file) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name);
+  const canPreview = {{ permissions.can_preview|tojson }};
+  const isPreviewable = (file) => canPreview && /\.(pdf|png|jpe?g|gif|webp|bmp)$/i.test(file.name);
+  const isImage = (file) => canPreview && /\.(png|jpe?g|gif|webp|bmp)$/i.test(file.name);
   const previewUrl = (file) => `{{ url_for('files.preview_file') }}?file=${encodeURIComponent(file.relative_path)}`;
   const escapeHtml = (value) => value.replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]);
   function openPreview(relativePath) {
@@ -247,11 +340,12 @@
       if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv'].includes(extension)) return 'documents';
       return 'other';
     };
+    const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
     const sortItems = (items) => [...items].sort((left, right) => {
       const field = sortField.value;
       const direction = sortDirection.value === 'ascending' ? 1 : -1;
-      const values = field === 'name' ? [left.name, right.name] : field === 'size' ? [parseSize(left.size), parseSize(right.size)] : field === 'type' ? [left.name.split('.').pop(), right.name.split('.').pop()] : [Date.parse(left.created_at), Date.parse(right.created_at)];
-      return typeof values[0] === 'string' ? direction * values[0].localeCompare(values[1]) : direction * (values[0] - values[1]);
+      const values = field === 'name' ? [left.name, right.name] : field === 'size' ? [parseSize(left.size), parseSize(right.size)] : field === 'type' ? [left.name.split('.').pop(), right.name.split('.').pop()] : [Date.parse(left.created_at) || 0, Date.parse(right.created_at) || 0];
+      return typeof values[0] === 'string' ? direction * collator.compare(values[0], values[1]) : direction * (values[0] - values[1]);
     });
     const renderBrowser = () => {
       const filter = fileFilter.value;
@@ -262,26 +356,45 @@
       folderSection.hidden = filter !== 'all' && filter !== 'folders';
       fileSection.hidden = filter === 'folders';
       folderSection.querySelector('h2').innerHTML = `Folders <span class="ml-2 text-xs font-normal text-slate-400">${folders.length} items</span>`;
-      folderSection.querySelectorAll('article, a').forEach((card) => card.remove());
+      Array.from(folderSection.children).forEach((child) => { if (child.tagName !== 'H2') child.remove(); });
       folders.forEach((folder) => {
-      const card = document.createElement('a');
-      card.className = 'mt-3 flex w-full max-w-69 items-center gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm hover:border-blue-300';
-      card.href = `/my-files/?folder=${encodeURIComponent(folder.relative_path)}`;
+      const card = document.createElement('div');
+      card.className = `mt-3 flex w-full max-w-69 items-center gap-4 rounded-lg border bg-white p-5 shadow-sm select-none ${selectedFolders.has(folder.relative_path) ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-200'}`;
+      card.title = 'ดับเบิลคลิกเพื่อเลือกโฟลเดอร์';
+      card.addEventListener('dblclick', () => { if (selectedFolders.has(folder.relative_path)) selectedFolders.delete(folder.relative_path); else selectedFolders.add(folder.relative_path); renderBrowser(); });
+      const openFolder = document.createElement('button');
+      openFolder.type = 'button';
+      openFolder.className = 'flex min-w-0 flex-1 items-center gap-4 text-left hover:text-blue-700';
+      openFolder.title = 'เปิดโฟลเดอร์';
+      let openFolderTimer;
+      openFolder.addEventListener('click', (event) => {
+        event.stopPropagation();
+        if (event.detail !== 1) return;
+        openFolderTimer = window.setTimeout(() => window.location.assign(`/my-files/?folder=${encodeURIComponent(folder.relative_path)}`), 250);
+      });
+      openFolder.addEventListener('dblclick', (event) => { event.preventDefault(); window.clearTimeout(openFolderTimer); });
       const icon = document.createElement('span'); icon.className = 'text-3xl'; icon.textContent = '📁';
       const name = document.createElement('h3'); name.className = 'font-semibold'; name.textContent = folder.name;
       const details = document.createElement('div');
       details.append(name);
       [['Size', folder.size], ['Created by', folder.created_by], ['Created', folder.created_at]].forEach(([label, value]) => { const line = document.createElement('p'); line.className = 'text-[11px] text-slate-500'; line.textContent = `${label}: ${value}`; details.append(line); });
-      card.append(icon, details); folderSection.append(card);
+      openFolder.append(icon, details); card.append(openFolder);
+      {% if permissions.can_delete %}
+      const deleteButton = document.createElement('button'); deleteButton.type = 'button'; deleteButton.className = 'btn btn-ghost btn-sm text-error'; deleteButton.textContent = 'Delete';
+      deleteButton.addEventListener('click', () => deleteFolder(folder.relative_path)); card.append(deleteButton);
+      {% endif %}
+      folderSection.append(card);
     });
       fileSection.querySelector('h2').innerHTML = `Files <span class="ml-2 text-xs font-normal text-slate-400">${files.length} items</span>`;
-      fileSection.querySelectorAll('p, article').forEach((item) => item.remove());
+      Array.from(fileSection.children).forEach((child) => { if (child.tagName !== 'H2') child.remove(); });
       if (!files.length) { const empty = document.createElement('p'); empty.className = 'mt-7 text-sm text-slate-500'; empty.textContent = 'No files match this filter.'; fileSection.append(empty); }
       files.forEach((file) => {
         const item = document.createElement('article');
-        item.className = 'mt-3 flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-4 text-sm';
+        item.className = `mt-3 flex items-start gap-3 rounded-lg border bg-white p-4 text-sm select-none ${selectedFiles.has(file.relative_path) ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-200'}`;
+        item.title = 'ดับเบิลคลิกเพื่อเลือกไฟล์';
+        item.addEventListener('dblclick', () => { if (selectedFiles.has(file.relative_path)) selectedFiles.delete(file.relative_path); else selectedFiles.add(file.relative_path); renderBrowser(); });
         const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.className = 'checkbox checkbox-primary mt-1'; checkbox.checked = selectedFiles.has(file.relative_path); checkbox.setAttribute('aria-label', `Select ${file.name}`);
-        checkbox.addEventListener('change', () => { if (checkbox.checked) selectedFiles.add(file.relative_path); else selectedFiles.delete(file.relative_path); });
+        checkbox.addEventListener('change', () => { if (checkbox.checked) selectedFiles.add(file.relative_path); else selectedFiles.delete(file.relative_path); renderBrowser(); });
         const thumbnail = document.createElement('button'); thumbnail.type = 'button'; thumbnail.className = 'flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded border bg-slate-50 text-xs font-bold text-slate-500';
         if (isImage(file)) { const image = document.createElement('img'); image.src = previewUrl(file); image.alt = ''; image.className = 'h-full w-full object-cover'; thumbnail.append(image); }
         else if (/\.pdf$/i.test(file.name)) { const pdf = document.createElement('iframe'); pdf.src = `${previewUrl(file)}#toolbar=0&navpanes=0`; pdf.title = ''; pdf.tabIndex = -1; pdf.className = 'h-full w-full pointer-events-none'; thumbnail.append(pdf); }
@@ -296,7 +409,7 @@
     [sortField, sortDirection, fileFilter].forEach((control) => control.addEventListener('change', renderBrowser));
     searchInput?.addEventListener('input', renderBrowser);
     searchButton?.addEventListener('click', renderBrowser);
-    selectAllButton?.addEventListener('click', () => { browser.files.forEach((file) => selectedFiles.add(file.relative_path)); renderBrowser(); });
+    selectAllButton?.addEventListener('click', () => { browser.files.forEach((file) => selectedFiles.add(file.relative_path)); browser.folders.forEach((folder) => selectedFolders.add(folder.relative_path)); renderBrowser(); });
     renderBrowser();
   }
 </script>

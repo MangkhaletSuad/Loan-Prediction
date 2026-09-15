@@ -1,0 +1,11 @@
+[Unit]
+Description=Purge expired FlowVault Recycle Bin items
+After=flowvault.service
+
+[Service]
+Type=oneshot
+User=flowvault
+Group=flowvault
+WorkingDirectory=/opt/flowvault
+Environment=PATH=/opt/flowvault/.venv/bin
+ExecStart=/opt/flowvault/.venv/bin/python -m flask --app app purge-recycle-bin

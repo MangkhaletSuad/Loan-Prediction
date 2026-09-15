@@ -12,6 +12,21 @@ from flowvault.database import get_database_connection
 management_bp = Blueprint("management", __name__)
 
 VALID_ROLES = {"user", "department_admin", "super_admin"}
+TIER_DEFINITIONS = {
+    "T1": ("R, C, N, M, D — Full file access", 1, 1, 1, 1, 1),
+    "T2": ("R, C, N, M — Create and modify, no delete", 1, 1, 1, 1, 0),
+    "T3": ("R, C — Preview and download", 1, 1, 0, 0, 0),
+    "T4": ("R — Preview only", 1, 0, 0, 0, 0),
+}
+
+
+def _tier_is_assignable(cursor, tier_code: str | None) -> bool:
+    if not tier_code:
+        return True
+    if tier_code not in TIER_DEFINITIONS:
+        return False
+    cursor.execute("SELECT 1 FROM permission_tiers WHERE tier_code=%s AND enabled=1", (tier_code,))
+    return cursor.fetchone() is not None
 
 
 def ensure_management_schema(cursor) -> None:
@@ -24,28 +39,55 @@ def ensure_management_schema(cursor) -> None:
         cursor.execute("SHOW COLUMNS FROM file_shares LIKE 'expires_at'")
         if not cursor.fetchone():
             cursor.execute("ALTER TABLE file_shares ADD COLUMN expires_at DATETIME NULL AFTER permission")
+        cursor.execute("SHOW COLUMNS FROM file_shares LIKE 'storage_root'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE file_shares ADD COLUMN storage_root VARCHAR(1024) NULL AFTER item_name")
+            # Preserve the scope at migration time for existing shares. New shares always store it explicitly.
+            cursor.execute(
+                "UPDATE file_shares AS s LEFT JOIN users AS u ON u.email=s.shared_by "
+                "SET s.storage_root=CASE WHEN u.role='super_admin' THEN '' "
+                "WHEN u.department IS NOT NULL THEN u.department ELSE u.email END"
+            )
     cursor.execute(
         """CREATE TABLE IF NOT EXISTS permission_tiers (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
             tier_code VARCHAR(30) NOT NULL UNIQUE,
             description VARCHAR(255) NOT NULL,
-            can_upload TINYINT(1) NOT NULL DEFAULT 0,
-            can_manage TINYINT(1) NOT NULL DEFAULT 0,
-            can_share TINYINT(1) NOT NULL DEFAULT 0,
+            can_preview TINYINT(1) NOT NULL DEFAULT 0,
+            can_download TINYINT(1) NOT NULL DEFAULT 0,
+            can_create TINYINT(1) NOT NULL DEFAULT 0,
+            can_modify TINYINT(1) NOT NULL DEFAULT 0,
+            can_delete TINYINT(1) NOT NULL DEFAULT 0,
             enabled TINYINT(1) NOT NULL DEFAULT 1,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )"""
     )
-    cursor.execute("SELECT COUNT(*) AS total FROM permission_tiers")
-    if cursor.fetchone()["total"] == 0:
-        cursor.executemany(
-            "INSERT INTO permission_tiers (tier_code, description, can_upload, can_manage, can_share) VALUES (%s, %s, %s, %s, %s)",
-            [
-                ("T1", "View and download only", 0, 0, 0),
-                ("T2", "View, download and upload", 1, 0, 0),
-                ("T3", "Full file management", 1, 1, 1),
-            ],
-        )
+    for column in ("can_preview", "can_download", "can_create", "can_modify", "can_delete"):
+        cursor.execute(f"SHOW COLUMNS FROM permission_tiers LIKE '{column}'")
+        if not cursor.fetchone():
+            cursor.execute(f"ALTER TABLE permission_tiers ADD COLUMN {column} TINYINT(1) NOT NULL DEFAULT 0")
+    cursor.executemany(
+        """INSERT INTO permission_tiers
+           (tier_code, description, can_preview, can_download, can_create, can_modify, can_delete, enabled)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, 1)
+           ON DUPLICATE KEY UPDATE description=VALUES(description), can_preview=VALUES(can_preview),
+             can_download=VALUES(can_download), can_create=VALUES(can_create), can_modify=VALUES(can_modify),
+             can_delete=VALUES(can_delete), enabled=1""",
+        [(code, *definition) for code, definition in TIER_DEFINITIONS.items()],
+    )
+    cursor.execute(
+        """CREATE TABLE IF NOT EXISTS recycle_bin_items (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            item_type VARCHAR(10) NOT NULL,
+            storage_root VARCHAR(1024) NOT NULL,
+            original_path VARCHAR(1024) NOT NULL,
+            trash_token CHAR(32) NOT NULL UNIQUE,
+            deleted_by VARCHAR(254) NOT NULL,
+            deleted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            expires_at DATETIME NOT NULL,
+            INDEX idx_recycle_bin_scope_expiry (storage_root(255), expires_at)
+        )"""
+    )
 
 
 def require_roles(*roles):
@@ -103,7 +145,6 @@ def users_permissions():
                 return redirect(url_for("management.users_permissions"))
             role = "user"
             department = current_department
-            tier = None
         if action == "add":
             email = request.form.get("email", "").strip().lower()
             password = request.form.get("password", "")
@@ -111,6 +152,9 @@ def users_permissions():
                 flash("ระบุอีเมลที่ถูกต้องและรหัสผ่านอย่างน้อย 8 ตัวอักษร")
             else:
                 with get_database_connection() as connection, connection.cursor() as cursor:
+                    if not _tier_is_assignable(cursor, tier):
+                        flash("Permission Tier ไม่ถูกต้องหรือถูกปิดใช้งาน")
+                        return redirect(url_for("management.users_permissions"))
                     cursor.execute("SELECT 1 FROM departments WHERE name=%s", (department,))
                     if not cursor.fetchone():
                         flash("กรุณาเลือกฝ่ายที่มีอยู่ในระบบ")
@@ -134,6 +178,9 @@ def users_permissions():
                 flash("ลบผู้ใช้แล้ว")
         elif role in VALID_ROLES:
             with get_database_connection() as connection, connection.cursor() as cursor:
+                if not _tier_is_assignable(cursor, tier):
+                    flash("Permission Tier ไม่ถูกต้องหรือถูกปิดใช้งาน")
+                    return redirect(url_for("management.users_permissions"))
                 cursor.execute("UPDATE users SET role=%s, department=%s, permission_tier=%s WHERE id=%s", (role, department, tier, request.form["user_id"]))
                 connection.commit()
             record_event(session["user_email"], "user_permissions_updated", f"user_id={request.form['user_id']}")
@@ -150,7 +197,7 @@ def users_permissions():
             departments = cursor.fetchall()
         else:
             departments = [{"name": current_department}] if current_department else []
-        cursor.execute("SELECT tier_code, description FROM permission_tiers WHERE enabled=1 ORDER BY tier_code")
+        cursor.execute("SELECT tier_code, description FROM permission_tiers WHERE tier_code IN ('T1', 'T2', 'T3', 'T4') AND enabled=1 ORDER BY FIELD(tier_code, 'T1', 'T2', 'T3', 'T4')")
         tiers = cursor.fetchall()
     return render_template("management/users.html", users=users, departments=departments, tiers=tiers, is_super_admin=is_super_admin, current_department=current_department)
 
@@ -261,24 +308,12 @@ def departments():
     return render_template("management/departments.html", departments=departments)
 
 
-@management_bp.route("/admin/permission-tiers", methods=["GET", "POST"])
+@management_bp.get("/admin/permission-tiers")
 @require_roles("super_admin")
 def permission_tiers():
-    if request.method == "POST":
-        action = request.form.get("action", "save")
-        with get_database_connection() as connection, connection.cursor() as cursor:
-            ensure_management_schema(cursor)
-            if action == "add":
-                cursor.execute("INSERT INTO permission_tiers (tier_code, description) VALUES (%s, %s)", (request.form.get("tier_code", "").strip().upper(), request.form.get("description", "").strip()))
-            elif action == "delete":
-                cursor.execute("DELETE FROM permission_tiers WHERE id=%s", (request.form.get("tier_id"),))
-            else:
-                cursor.execute("UPDATE permission_tiers SET tier_code=%s, description=%s, can_upload=%s, can_manage=%s, can_share=%s, enabled=%s WHERE id=%s", (request.form.get("tier_code", "").strip().upper(), request.form.get("description", "").strip(), 1 if request.form.get("can_upload") else 0, 1 if request.form.get("can_manage") else 0, 1 if request.form.get("can_share") else 0, 1 if request.form.get("enabled") else 0, request.form.get("tier_id")))
-            connection.commit()
-        record_event(session["user_email"], f"permission_tier_{action}", request.form.get("tier_code", "")[:255])
-        flash("บันทึก Permission Tier แล้ว")
     with get_database_connection() as connection, connection.cursor() as cursor:
         ensure_management_schema(cursor)
-        cursor.execute("SELECT t.*, COUNT(u.id) AS users FROM permission_tiers t LEFT JOIN users u ON BINARY u.permission_tier=BINARY t.tier_code GROUP BY t.id ORDER BY t.tier_code")
+        connection.commit()
+        cursor.execute("SELECT t.*, COUNT(u.id) AS users FROM permission_tiers t LEFT JOIN users u ON BINARY u.permission_tier=BINARY t.tier_code WHERE t.tier_code IN ('T1', 'T2', 'T3', 'T4') GROUP BY t.id ORDER BY FIELD(t.tier_code, 'T1', 'T2', 'T3', 'T4')")
         tiers = cursor.fetchall()
     return render_template("management/permission_tiers.html", tiers=tiers)

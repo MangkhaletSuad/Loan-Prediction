@@ -1,0 +1,14 @@
+.env
+.git
+.venv
+.venv.broken
+__pycache__
+*.py[cod]
+*.log
+.vscode
+storage
+data
+recycle-bin
+.flowvault-recycle-bin
+user_password.txt
+16passsword.txt
