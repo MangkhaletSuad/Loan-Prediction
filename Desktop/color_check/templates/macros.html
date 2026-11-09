@@ -1,0 +1,72 @@
+{% macro icon(name, size=18, cls='') -%}
+<svg class="icon {{ cls }}" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><use href="#i-{{ name }}"/></svg>
+{%- endmacro %}
+
+{% macro swatch(hex, size=28, title='', highlight=false) -%}
+<span class="swatch {{ 'swatch-hl' if highlight }}" style="background: {{ hex }}; width: {{ size }}px; height: {{ size }}px" title="{{ title }}"></span>
+{%- endmacro %}
+
+{% macro color_chip(color, highlight=false) -%}
+<div class="color-chip {{ 'is-match' if highlight }}" title="{{ color.color_name }} · {{ color.hex }}">
+  {{ swatch(color.hex, 22) }}
+  <div class="color-chip-text">
+    <span class="color-chip-name">{{ color.color_name }}</span>
+    <span class="color-chip-rgb mono">{{ color.rgb }}</span>
+  </div>
+</div>
+{%- endmacro %}
+
+{# Image with a placeholder when there is no file; ui.js swaps in the placeholder if loading fails. #}
+{% macro safe_image(src, alt='', cls='') -%}
+{% if src %}
+<img src="{{ src }}" alt="{{ alt }}" class="js-safe-img {{ cls }}" loading="lazy">
+{% else %}
+<div class="img-placeholder {{ cls }}" role="img" aria-label="{{ alt or 'No image' }}">{{ icon('image', 28) }}<span>No image</span></div>
+{% endif %}
+{%- endmacro %}
+
+{% macro sort_header(label, field, sort, order, endpoint, args, default_order='desc') -%}
+{% set active = sort == field %}
+{% set next_order = ('desc' if order == 'asc' else 'asc') if active else default_order %}
+<th aria-sort="{{ ('ascending' if order == 'asc' else 'descending') if active else 'none' }}">
+  <a class="th-sort {{ 'active' if active }}" href="{{ page_url(endpoint, args, sort=field, order=next_order, page=None) }}">
+    {{ label }}{{ icon(('sortUp' if order == 'asc' else 'sortDown') if active else 'sort', 14) }}
+  </a>
+</th>
+{%- endmacro %}
+
+{% macro pagination(page, pages, total, per_page, endpoint, args, options=(10, 25, 50)) -%}
+{% if total %}
+<div class="pagination">
+  <span class="muted">{{ (page - 1) * per_page + 1 }}–{{ [page * per_page, total]|min }} of {{ total }}</span>
+  <div class="pagination-controls">
+    <form method="get" action="{{ url_for(endpoint) }}" class="js-autosubmit">
+      {% for k, v in args.items() if k not in ('per_page', 'page') and v %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+      <select class="select select-sm" name="per_page" aria-label="Rows per page">
+        {% for n in options %}<option value="{{ n }}" {{ 'selected' if n == per_page }}>{{ n }} / page</option>{% endfor %}
+      </select>
+    </form>
+    {% if page > 1 %}<a class="icon-btn" href="{{ page_url(endpoint, args, page=page - 1) }}" aria-label="Previous page">{{ icon('chevronLeft') }}</a>
+    {% else %}<span class="icon-btn" aria-disabled="true">{{ icon('chevronLeft') }}</span>{% endif %}
+    {% for p in range([1, page - 2]|max, [pages, page + 2]|min + 1) %}
+      <a class="page-btn {{ 'active' if p == page }}" href="{{ page_url(endpoint, args, page=p) }}">{{ p }}</a>
+    {% endfor %}
+    {% if page < pages %}<a class="icon-btn" href="{{ page_url(endpoint, args, page=page + 1) }}" aria-label="Next page">{{ icon('chevronRight') }}</a>
+    {% else %}<span class="icon-btn" aria-disabled="true">{{ icon('chevronRight') }}</span>{% endif %}
+  </div>
+</div>
+{% endif %}
+{%- endmacro %}
+
+{% macro empty_state(ic, title, text='') -%}
+<div class="empty">
+  {{ icon(ic, 36) }}
+  <h3>{{ title }}</h3>
+  {% if text %}<p class="muted">{{ text }}</p>{% endif %}
+  {{ caller() if caller }}
+</div>
+{%- endmacro %}
+
+{% macro local_time(iso) -%}
+<time class="js-local-time" datetime="{{ iso }}">{{ iso[:16]|replace('T', ' ') if iso }}</time>
+{%- endmacro %}

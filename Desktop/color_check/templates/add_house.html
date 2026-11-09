@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "macros.html" import icon with context %}
+{% block title %}Add house{% endblock %}
+{% block content %}
+<div class="page-narrow">
+  <div class="page-header">
+    <div>
+      <a href="{{ url_for('dashboard') }}" class="back-link">{{ icon('back', 16) }} Dashboard</a>
+      <h1>Add house</h1>
+      <p class="muted">Create a house and upload one or more photos. You'll pick colors on the next screen.</p>
+    </div>
+  </div>
+
+  <form class="card form-card" id="add-house-form" novalidate>
+    <div class="field">
+      <label for="house-name">House name <span class="req">*</span></label>
+      <input id="house-name" name="house_name" class="input" maxlength="150" placeholder="e.g. Villa A, Baan Suan 12" autofocus>
+    </div>
+
+    <div class="field">
+      <label>House images</label>
+      <div class="js-dropzone"></div>
+    </div>
+
+    <div class="form-actions">
+      <a href="{{ url_for('dashboard') }}" class="btn">Cancel</a>
+      <button class="btn btn-primary js-submit" type="submit">Create house</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="{{ url_for('static', filename='js/add_house.js') }}"></script>
+{% endblock %}

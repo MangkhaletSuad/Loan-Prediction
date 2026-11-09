@@ -1,0 +1,55 @@
+{#- Color records table.
+    Context: colors (list of Color.to_dict()), show_house (bool), images (list, house page only),
+    and for sortable headers: endpoint, args, sort, order (endpoint=None gives plain headers). -#}
+{% from "macros.html" import icon, swatch, sort_header with context %}
+{% macro H(label, field) -%}
+  {% if endpoint %}{{ sort_header(label, field, sort, order, endpoint, args, 'asc') }}{% else %}<th>{{ label }}</th>{% endif %}
+{%- endmacro %}
+{% set image_ids = (images or [])|map(attribute='id')|list %}
+<div class="table-wrap">
+  <table class="table js-color-table">
+    <thead>
+      <tr>
+        <th class="col-swatch">Swatch</th>
+        {{ H('Color name', 'color_name') }}
+        {{ H('RGB', 'rgb') }}
+        {{ H('HEX', 'hex') }}
+        {{ H('Manufacturing', 'manufacturing') }}
+        {{ H('Model', 'model') }}
+        {% if show_house %}{{ H('House', 'house_name') }}{% endif %}
+        <th>Image</th>
+        <th class="col-actions"><span class="sr-only">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in colors %}
+      <tr id="color-{{ c.id }}" data-color-id="{{ c.id }}" data-color='{{ c|tojson }}'>
+        <td>{{ swatch(c.hex, 32, c.hex) }}</td>
+        <td class="strong">{{ c.color_name }}</td>
+        <td class="mono nowrap">{{ c.rgb }}</td>
+        <td class="mono">{{ c.hex }}</td>
+        <td><span class="badge badge-neutral">{{ c.manufacturing }}</span></td>
+        <td>{{ c.model }}</td>
+        {% if show_house %}<td><a href="{{ url_for('house_page', house_id=c.house_id) }}">{{ c.house_name }}</a></td>{% endif %}
+        <td class="small">
+          {% if c.image_id %}
+            {% if images is defined and images %}
+              <button class="link-btn js-show-image" type="button" data-image-id="{{ c.image_id }}">
+                Image #{{ (image_ids.index(c.image_id) + 1) if c.image_id in image_ids else '?' }}
+              </button>
+            {% else %}
+              <a class="muted" href="{{ url_for('house_page', house_id=c.house_id) }}">Linked</a>
+            {% endif %}
+          {% else %}<span class="muted">—</span>{% endif %}
+        </td>
+        <td class="col-actions">
+          <div class="row-actions">
+            <button class="icon-btn js-edit-color" type="button" aria-label="Edit {{ c.color_name }}" title="Edit">{{ icon('edit') }}</button>
+            <button class="icon-btn danger js-delete-color" type="button" aria-label="Delete {{ c.color_name }}" title="Delete">{{ icon('trash') }}</button>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

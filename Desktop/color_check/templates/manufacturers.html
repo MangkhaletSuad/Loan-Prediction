@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "macros.html" import icon with context %}
+{% block title %}Manufacturers{% endblock %}
+{% block content %}
+<div class="page-narrow">
+  <div class="page-header">
+    <div>
+      <h1>Manufacturers</h1>
+      <p class="muted">TOA and DELUX are built in. New names typed in the color form are saved here automatically.</p>
+    </div>
+  </div>
+
+  <form class="card form-card inline-form" id="mfr-form" novalidate>
+    <div class="field grow">
+      <label for="mfr-name">Add custom manufacturer</label>
+      <input id="mfr-name" name="name" class="input" maxlength="100" placeholder="e.g. Jotun, Nippon Paint, Beger">
+    </div>
+    <button class="btn btn-primary" type="submit">{{ icon('plus') }} Add</button>
+  </form>
+
+  <div class="card table-card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Name</th><th>Type</th><th>Colors</th><th class="col-actions"><span class="sr-only">Actions</span></th></tr>
+        </thead>
+        <tbody>
+          {% for m in manufacturers %}
+          <tr data-mfr-id="{{ m.id }}" data-mfr-name="{{ m.name }}">
+            <td class="strong">{{ m.name }}</td>
+            <td><span class="badge {{ '' if m.is_default else 'badge-neutral' }}">{{ 'Default' if m.is_default else 'Custom' }}</span></td>
+            <td>{{ m.color_count }}</td>
+            <td class="col-actions">
+              {% if not m.is_default %}
+                <button class="icon-btn danger js-delete-mfr" type="button" {{ 'disabled' if m.color_count > 0 }}
+                        title="{{ 'In use by color records' if m.color_count > 0 else 'Delete' }}" aria-label="Delete {{ m.name }}">{{ icon('trash') }}</button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script type="application/json" id="mfr-data">{{ manufacturers|map(attribute='name')|list|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="{{ url_for('static', filename='js/manufacturers.js') }}"></script>
+{% endblock %}

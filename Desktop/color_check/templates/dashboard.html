@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% from "macros.html" import icon, swatch, color_chip, safe_image, sort_header, pagination, empty_state, local_time with context %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+{% set args = {'q': q, 'manufacturer': mfr, 'view': view, 'sort': sort, 'order': order, 'per_page': per_page} %}
+{% set filtering = q or mfr %}
+
+<div class="page-header">
+  <div>
+    <h1>Dashboard</h1>
+    <p class="muted">All registered houses and their paint colors.</p>
+  </div>
+  <div class="page-actions">
+    {% if stats.colors %}
+      <a class="btn" href="{{ url_for('export_all') }}" download>{{ icon('download') }} Export all</a>
+    {% else %}
+      <span class="btn" aria-disabled="true">{{ icon('download') }} Export all</span>
+    {% endif %}
+    <a class="btn btn-primary" href="{{ url_for('add_house_page') }}">{{ icon('plus') }} Add house</a>
+  </div>
+</div>
+
+<section class="stats">
+  {% for label, value, ic in [('Houses', stats.houses, 'house'), ('Registered colors', stats.colors, 'palette'),
+                               ('Images', stats.images, 'image'), ('Manufacturers', stats.manufacturers, 'factory')] %}
+  <div class="card stat">
+    <span class="stat-icon">{{ icon(ic) }}</span>
+    <div>
+      <div class="stat-value">{{ value }}</div>
+      <div class="muted small">{{ label }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</section>
+
+{% if stats.colors_by_manufacturer %}
+<section class="card mfr-breakdown">
+  <span class="muted small">Colors by manufacturer</span>
+  <div class="mfr-pills">
+    {% for m in stats.colors_by_manufacturer %}
+      {% set on = mfr|lower == m.name|lower %}
+      <a class="pill {{ 'active' if on }}" href="{{ page_url('dashboard', args, manufacturer=(None if on else m.name), page=None) }}">
+        {{ m.name }} <span class="pill-count">{{ m.count }}</span>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<form class="toolbar js-autosubmit" method="get" action="{{ url_for('dashboard') }}" role="search">
+  <div class="search">
+    {{ icon('search') }}
+    <input class="input" type="search" name="q" value="{{ q }}" aria-label="Search"
+           placeholder="Search color name, RGB, HEX, manufacturing, model or house…">
+  </div>
+  <select class="select" name="manufacturer" aria-label="Filter by manufacturing">
+    <option value="">All manufacturers</option>
+    {% for m in manufacturers %}<option value="{{ m.name }}" {{ 'selected' if mfr|lower == m.name|lower }}>{{ m.name }}</option>{% endfor %}
+  </select>
+  <input type="hidden" name="view" value="{{ view }}">
+  <input type="hidden" name="sort" value="{{ sort }}">
+  <input type="hidden" name="order" value="{{ order }}">
+  <input type="hidden" name="per_page" value="{{ per_page }}">
+  <div class="segmented" role="group" aria-label="View">
+    <a class="{{ 'active' if view == 'cards' }}" href="{{ page_url('dashboard', args, view='cards') }}" aria-label="Card view">{{ icon('grid') }}</a>
+    <a class="{{ 'active' if view == 'table' }}" href="{{ page_url('dashboard', args, view='table') }}" aria-label="Table view">{{ icon('list') }}</a>
+  </div>
+</form>
+
+{% if filtering %}
+<p class="muted small result-note">
+  {{ total }} house(s) match{% if q %} “{{ q }}”{% endif %}{% if mfr %} · {{ mfr }}{% endif %}. Matching colors are outlined.
+  <a class="link-btn" href="{{ url_for('dashboard', view=view) }}">Clear filters</a>
+</p>
+{% endif %}
+
+{% if not houses %}
+  {% if filtering %}
+    {{ empty_state('search', 'No matching houses', 'Try a different search term or manufacturer.') }}
+  {% else %}
+    {% call empty_state('house', 'No houses yet', 'Upload a house photo and pick its paint colors.') %}
+      <a class="btn btn-primary" href="{{ url_for('add_house_page') }}">{{ icon('plus') }} Add your first house</a>
+    {% endcall %}
+  {% endif %}
+
+{% elif view == 'cards' %}
+<div class="house-grid">
+  {% for h in houses %}
+  <a class="card house-card" href="{{ url_for('house_page', house_id=h.id) }}">
+    <div class="house-card-img">
+      {{ safe_image(h.images[0].url if h.images else '', h.house_name) }}
+      {% if h.image_count > 1 %}<span class="img-count">+{{ h.image_count - 1 }}</span>{% endif %}
+    </div>
+    <div class="house-card-body">
+      <div class="house-card-head">
+        <h3>{{ h.house_name }}</h3>
+        <span class="badge">{{ h.color_count }} colors</span>
+      </div>
+      {% if h.colors %}
+        <div class="chip-list">
+          {% for c in h.colors %}{{ color_chip(c, h.matched_color_ids is defined and c.id in h.matched_color_ids) }}{% endfor %}
+        </div>
+      {% else %}
+        <p class="muted small">No colors registered yet.</p>
+      {% endif %}
+    </div>
+  </a>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="card table-card">
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          {{ sort_header('House', 'house_name', sort, order, 'dashboard', args, 'asc') }}
+          {{ sort_header('Colors', 'color_count', sort, order, 'dashboard', args) }}
+          <th>Manufacturing</th>
+          {{ sort_header('Images', 'image_count', sort, order, 'dashboard', args) }}
+          {{ sort_header('Updated', 'updated_at', sort, order, 'dashboard', args) }}
+        </tr>
+      </thead>
+      <tbody>
+        {% for h in houses %}
+        <tr class="row-link" data-href="{{ url_for('house_page', house_id=h.id) }}">
+          <td>
+            <div class="house-cell">
+              {{ safe_image(h.images[0].url if h.images else '', h.house_name, 'thumb') }}
+              <a class="strong" href="{{ url_for('house_page', house_id=h.id) }}">{{ h.house_name }}</a>
+            </div>
+          </td>
+          <td>
+            <div class="swatch-row">
+              {% for c in h.colors %}{{ swatch(c.hex, 20, c.color_name ~ ' · ' ~ c.rgb, h.matched_color_ids is defined and c.id in h.matched_color_ids) }}{% endfor %}
+              <span class="muted small">{{ h.color_count }}</span>
+            </div>
+          </td>
+          <td class="small">{{ h.manufacturers|join(', ') or '—' }}</td>
+          <td>{{ h.image_count }}</td>
+          <td class="muted small nowrap">{{ local_time(h.updated_at) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{{ pagination(page, pages, total, per_page, 'dashboard', args, per_page_options) }}
+{% endblock %}

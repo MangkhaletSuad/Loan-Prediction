@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% from "macros.html" import icon, safe_image, empty_state, local_time with context %}
+{% block title %}{{ house.house_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <a href="{{ url_for('dashboard') }}" class="back-link">{{ icon('back', 16) }} Dashboard</a>
+    <h1 class="title-row">
+      {{ house.house_name }}
+      <button class="icon-btn js-rename" type="button" aria-label="Rename house" title="Rename">{{ icon('edit', 16) }}</button>
+    </h1>
+    <p class="muted small">{{ house.color_count }} color(s) · {{ house.image_count }} image(s) · updated {{ local_time(house.updated_at) }}</p>
+  </div>
+  <div class="page-actions">
+    <button class="btn js-upload" type="button">{{ icon('upload') }} <span class="js-upload-label">Upload images</span></button>
+    {% if house.color_count %}
+      <a class="btn" href="{{ url_for('export_house', house_id=house.id) }}" download>{{ icon('download') }} Export Excel</a>
+    {% else %}
+      <span class="btn" aria-disabled="true">{{ icon('download') }} Export Excel</span>
+    {% endif %}
+    <button class="btn btn-primary js-add-color" type="button">{{ icon('plus') }} Add color</button>
+    <button class="icon-btn danger js-delete-house" type="button" aria-label="Delete house" title="Delete house">{{ icon('trash') }}</button>
+    <input type="file" class="js-file-input" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp" multiple hidden>
+  </div>
+</div>
+
+<section class="card section">
+  <div class="section-head">
+    <h2>Pick colors from image</h2>
+    <span class="muted small truncate js-image-name"></span>
+  </div>
+  {% if house.images %}
+    <div class="js-picker"></div>
+    <div class="thumb-strip">
+      {% for img in house.images %}
+        {% set count = house.colors|selectattr('image_id', 'equalto', img.id)|list|length %}
+        <div class="thumb-item" data-image-id="{{ img.id }}">
+          <button class="thumb-btn js-thumb" type="button" aria-label="Show image {{ loop.index }}">
+            {{ safe_image(img.url, img.original_name) }}
+            <span class="thumb-label">#{{ loop.index }}{% if count %} · {{ count }}{% endif %}</span>
+          </button>
+          <button class="thumb-remove js-delete-image" type="button" aria-label="Delete image {{ loop.index }}" title="Delete image">{{ icon('close', 12) }}</button>
+        </div>
+      {% endfor %}
+      <button class="thumb-add js-upload" type="button" aria-label="Upload more images">{{ icon('plus') }}</button>
+    </div>
+  {% else %}
+    {% call empty_state('image', 'No images yet', 'Upload a photo of the house, then click on it to pick colors.') %}
+      <button class="btn btn-primary js-upload" type="button">{{ icon('upload') }} Upload images</button>
+    {% endcall %}
+  {% endif %}
+</section>
+
+<section class="card section">
+  <div class="section-head">
+    <h2>Registered colors ({{ house.color_count }})</h2>
+  </div>
+  {% if house.colors %}
+    <div class="swatch-strip">
+      {% for c in house.colors %}
+        <button class="swatch-tile js-edit-tile" type="button" data-color-ref="{{ c.id }}" title="Edit">
+          <span class="swatch-tile-color" style="background: {{ c.hex }}"></span>
+          <span class="swatch-tile-name">{{ c.color_name }}</span>
+          <span class="mono small muted">{{ c.hex }}</span>
+        </button>
+      {% endfor %}
+    </div>
+    {% with show_house=false, endpoint='house_page', images=house.images %}
+      {% include "_color_table.html" %}
+    {% endwith %}
+  {% else %}
+    {{ empty_state('palette', 'No colors registered', 'Click anywhere on the image above, or use “Add color”.') }}
+  {% endif %}
+</section>
+
+<script type="application/json" id="house-data">{{ house|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="{{ url_for('static', filename='js/house_detail.js') }}"></script>
+{% endblock %}

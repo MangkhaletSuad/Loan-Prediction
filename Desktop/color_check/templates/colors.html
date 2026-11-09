@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% from "macros.html" import icon, pagination, empty_state with context %}
+{% block title %}All colors{% endblock %}
+{% block content %}
+{% set filtering = args.q or args.manufacturer %}
+<div class="page-header">
+  <div>
+    <h1>All colors</h1>
+    <p class="muted">Every registered paint color across all houses.</p>
+  </div>
+  <div class="page-actions">
+    {% if result.total %}
+      <a class="btn" href="{{ url_for('export_all') }}" download>{{ icon('download') }} Export all</a>
+    {% else %}
+      <span class="btn" aria-disabled="true">{{ icon('download') }} Export all</span>
+    {% endif %}
+    <button class="btn btn-primary js-add-color" type="button">{{ icon('plus') }} Add color</button>
+  </div>
+</div>
+
+<form class="toolbar js-autosubmit" method="get" action="{{ url_for('colors_page') }}" role="search">
+  <div class="search">
+    {{ icon('search') }}
+    <input class="input" type="search" name="q" value="{{ args.q }}" aria-label="Search colors"
+           placeholder="Search color name, RGB, HEX, manufacturing, model or house…">
+  </div>
+  <select class="select" name="manufacturer" aria-label="Filter by manufacturing">
+    <option value="">All manufacturers</option>
+    {% for m in manufacturers %}<option value="{{ m.name }}" {{ 'selected' if args.manufacturer|lower == m.name|lower }}>{{ m.name }}</option>{% endfor %}
+  </select>
+  <input type="hidden" name="sort" value="{{ args.sort }}">
+  <input type="hidden" name="order" value="{{ args.order }}">
+  <input type="hidden" name="per_page" value="{{ args.per_page }}">
+</form>
+
+{% if not result.total %}
+  {% if filtering %}
+    {{ empty_state('search', 'No matching colors', 'Try a different search term or manufacturer.') }}
+  {% else %}
+    {{ empty_state('palette', 'No colors yet', 'Open a house and click its image to register colors.') }}
+  {% endif %}
+{% else %}
+  <div class="card table-card">
+    {% with show_house=true, endpoint='colors_page', sort=args.sort, order=args.order, images=none %}
+      {% include "_color_table.html" %}
+    {% endwith %}
+  </div>
+{% endif %}
+
+{{ pagination(result.page, result.pages, result.total, result.per_page, 'colors_page', args) }}
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="{{ url_for('static', filename='js/colors_page.js') }}"></script>
+{% endblock %}
