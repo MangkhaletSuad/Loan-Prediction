@@ -12,19 +12,27 @@
 เปิด Terminal หรือ Command Prompt ในโฟลเดอร์โปรเจกต์นี้ แล้วรันคำสั่ง:
 ```bash
 python -m venv .venv
+```
 
 ### 2. เปิดใช้งาน (Activate) Virtual Environment
 สำหรับ Windows:
 ```bash
 .venv\Scripts\activate
+```
 
 สำหรับ macOS / Linux:
 ```bash
 source .venv/bin/activate
+```
 
 ### 3. ติดตั้ง Dependencies
 ติดตั้ง Library ทั้งหมดที่ระบุไว้ในไฟล์ requirements.txt:
+```
+pip install -r requirements.txt
+```
 
 ### วิธีการรันแอปพลิเคชัน
 เมื่อติดตั้งเสร็จเรียบร้อยแล้ว สามารถเปิดใช้งานแอปได้โดยรันคำสั่ง:
+```
 streamlit run app.py
+```
